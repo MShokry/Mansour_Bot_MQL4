@@ -74,6 +74,9 @@ int _CountOrd, _Buy, _Sell;
 double _SLots,_BLots;
 double _SProfit, _BProfit;
 double profit;
+// Timing
+bool BarM,BarH;
+
 // iSAR
 double trade_sar,trade_sar1,stop_sar;
 // Bars
@@ -109,10 +112,10 @@ int start()
    HIGH   = iHigh(Symbol(), PERIOD_H1, shift);
    LOW    = iLow(Symbol(), PERIOD_H1, shift);
    
+   BarH = IsBarClosed(PERIOD_H1) ;
+   BarM = IsBarClosed(PERIOD_M15);
    
    RefreshRates();
-   //Print("NowDIPlus="+adxplsM15+" NowDIMinus="+adxminusM15+" PrevDIPlus="+adxplsM151+" PrevDIMinus="+adxminusM151);
-   change = (lastM != adxplsM15) && (lastP != adxminusM15);
    
    Total_orders(false);
    if( profit > 1.0 && _SLots > 0.0 && _BLots > 0.0 ){ //@ Break Even
@@ -120,17 +123,14 @@ int start()
       _Close_all();
       Total_orders();
       }
-      
-   if (change) 
-      order_check();	
-   lastM = adxplsM15;
-   lastP = adxminusM15;
-   lastH = (adxplsH11 - adxminusH11);
+        
+   order_check();	
    return(0);
    
 }
-
-// Pip Point Function
+//+------------------------------------------------------------------+
+//| Pip Point Function                                                  |
+//+------------------------------------------------------------------+
 double RealPipPoint(string Currency)
 	{
 		double CalcPoints;
@@ -148,6 +148,19 @@ void OnTimer()
 //---
    ordered = false;
   }
+
+//+------------------------------------------------------------------+
+//| Clock function                                                   |
+//+------------------------------------------------------------------+
+bool IsBarClosed(int timeframe)
+{
+    static datetime lastbartime;
+
+    if(iTime(NULL,timeframe,0)==lastbartime) // wait for new bar
+        return(false);
+    lastbartime=iTime(NULL,timeframe,0);
+    return(true);
+}
 //+------------------------------------------------------------------+
 void Total_orders(bool P = true)
 {
@@ -199,16 +212,22 @@ int order_check()
    
    if(adxMin < 15 )
       return 0;
-   
-   Comment("Status : \n BH ", buy_condition_H ," SH ", sell_condition_H  , "\n" ,
-      " H2B ", intersect_H_to_Buy, " H2S ",intersect_H_to_Sell ,"\n" ,
-      " BM ",buy_condition_M , " SM ",sell_condition_M , "\n" ,
-      " M2B ", intersect_M_to_Buy, " M2S ",intersect_M_to_Sell );
-   Print("Status : \nBH ", buy_condition_H ," SH ", sell_condition_H  , "\n" ,
-      " H2B ", intersect_H_to_Buy, " H2S ",intersect_H_to_Sell ,"\n" ,
-      " BM ",buy_condition_M , " SM ",sell_condition_M , "\n" ,
-      " M2B ", intersect_M_to_Buy, " M2S ",intersect_M_to_Sell );      
-   if(lastH != (adxplsH11 - adxminusH11)){
+
+
+   Comment("Status : \n BH  ", buy_condition_H ," SH  ", sell_condition_H  , "\n" ,
+   " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,"\n" ,
+   " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , "\n" ,
+   " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, "\n" ,
+   " SLt ", _SLots,                          " BLt ",_BLots, "\n" 
+       );
+   Print("Status : \n BH  ", buy_condition_H ," SH  ", sell_condition_H  , "\n" ,
+   " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,"\n" ,
+   " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , "\n" ,
+   " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, "\n" ,
+   " SLt ", _SLots,                          " BLt ",_BLots, "\n" 
+       ); 
+
+   if(BarH){
       // Change on H
       if(intersect_H_to_Buy){
          if (_Sell > 0 && trade_sar < CLOSE && stop_sar < CLOSE){
@@ -239,6 +258,8 @@ int order_check()
             }        
          }   
     }
+
+   if(!BarM) return (0);
    // Change on M and Hour is reversed
    // May be Close all 
    if( sell_condition_H && intersect_M_to_Buy && (_Buy > 0)){
@@ -257,52 +278,24 @@ int order_check()
       Action = "#Action# Close Buy Diff";
       if(_BLots > _SLots){
          _Close(OP_BUY, NormalizeDouble((_BLots - _SLots), Digits));
-         //Total_orders();
          _Update(OP_SELL);
          }
-         //_Close(OP_SELL, 0);
-         //_Close(OP_BUY, 0);
         }
    else if( buy_condition_H && intersect_M_to_Buy && (_Sell > 0)){
-   /*
-      double break_even = MathAbs( profit / (_BLots  - _SLots + LotSize));
-      Print ("Buying Normal XXXX "+ (string) break_even);
-      Buy_normal(LotSize, break_even);
-      // Refesh lots
-      Total_orders();
-      // Update All open oreders to break even
-      if(_BLots > _SLots)
-         _Update(OP_BUY); 
-         
-         */
       Reason = "#Reason# BH & M2B & _Sell";
       Action = "#Action# Buy Double "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
       Buy_double(LotSize);
    }
    else if( sell_condition_H && intersect_M_to_Sell  && (_Buy > 0) ){  
-      /*
-      double break_even = MathAbs( profit / (_BLots  - _SLots - LotSize));
-      Print ("Selling Normal XXXX "+ (string) break_even);
-      Sell_normal(LotSize, break_even);
-      // Refesh lots
-      Total_orders();
-      // Update All open oreders to break even
-      if(_BLots < _SLots)
-         _Update(OP_SELL);
-     */
      Reason = "#Reason# SH & M2S & _Buy";
      Action = "#Action# Sell Double "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
      Sell_double(LotSize);
-   }
-   //Print("Buy1="+buy_condition_1+" buy2="+buy_condition_1+" intersect="+intersect);    
-   // Long // On M =>+, H+ No sell            
+   }        
 	else if( buy_condition_H && intersect_M_to_Buy && (_Sell == 0)){
 	   Reason = "#ReasonBH & M2B & !_Sell";
       Action = "#Action# Buy "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
 		Buy_normal (LotSize,TakeProfit);            
 		}
-   //Print("Sell1="+sell_condition_1+" Sell2="+sell_condition_2+" intersect="+intersect_sell);                  
-	//Short // On M =>-, H- No Buy      
 	else if( sell_condition_H && intersect_M_to_Sell  && (_Buy == 0) ){
 	   Reason = "#ReasonSH & M2S & !_Buy";
       Action = "#Action# Sell "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
