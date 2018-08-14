@@ -5,8 +5,16 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.0"
+#property version   "2.00"
 #property strict
+
+
+/********************************************************************
+To do
+
+// Rety if failure
+
+**********************************************************************/
 
 //---- Dependencies
 #import "stdlib.ex4"
@@ -15,12 +23,12 @@
 
 // External variables
 extern string PS_Ex0                   = ">> Lot Size TP SL";
-extern double LotSize = 0.01;
-extern double StopLoss = 0;
-extern double TakeProfit = 50;
+extern double LotSize                  = 0.01;
+extern double StopLoss                 = 0;
+extern double TakeProfit               = 50;
 extern string PS_Ex1                   = ">> Timing and Graph";
-extern int shift = 1;
-extern int MagicNumber = 224455;
+extern int shift                       = 1;
+extern int MagicNumber                 = 224455;
 extern string PS_Ex2                   = ">> Entry strategy";
 extern double TradeStep                = 0.002;
 extern double TradeMax                 = 0.2;
@@ -59,7 +67,7 @@ void OnDeinit(const int reason)
       
   }
 //+------------------------------------------------------------------+
-//| Expert tick function                                             |
+//| Expert Global          Vars                                      |
 //+------------------------------------------------------------------+
 
 double adxplsH1,adxminusH1;
@@ -81,6 +89,10 @@ bool BarM,BarH;
 double trade_sar,trade_sar1,stop_sar;
 // Bars
 double CLOSE,CLOSE1,HIGH,LOW;
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
 
 int start()
 	{
@@ -161,6 +173,8 @@ bool IsBarClosed(int timeframe)
     lastbartime=iTime(NULL,timeframe,0);
     return(true);
 }
+//+------------------------------------------------------------------+
+//| Totals function                                                  |
 //+------------------------------------------------------------------+
 void Total_orders(bool P = true)
 {
@@ -362,10 +376,11 @@ int order_check()
 	double LongStopLoss = 0;
 	double LongTakeProfit = 0;
   //if (SL > 0) sl = NormalizeDouble(Bid + SL * Point, Digits);
-   if(StopLoss > 0) LongStopLoss = NormalizeDouble(Ask - StopLoss * RealPoint, Digits);
-	if(TP > 0) LongTakeProfit = NormalizeDouble(Ask + TP * RealPoint, Digits);
-	//LongTicket = OrderSend(Symbol(),OP_BUY,LotSize,Ask,0,0,0,"Buy Order",MagicNumber,0,Green);
-	string comment = " " + Reason + " " + Action;
+   RefreshRates();
+   if(StopLoss > 0) LongStopLoss = NormalizeDouble(Bid - StopLoss * RealPoint, Digits);
+   if(TP > 0) LongTakeProfit = NormalizeDouble(Bid + TP * RealPoint, Digits);
+   //LongTicket = OrderSend(Symbol(),OP_BUY,LotSize,Ask,0,0,0,"Buy Order",MagicNumber,0,Green);
+   string comment = " " + Reason + " " + Action;
    if (OrderSend( Symbol(), OP_BUY, _LotSize, Ask, 3, LongStopLoss, LongTakeProfit, "Buy Order" + comment , MagicNumber,0, clrBlue) == -1)
    {
        Print("Error order Buy "+(string)ErrorDescription(GetLastError()) +comment);
@@ -432,8 +447,9 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
    Print ("Selling ", _LotSize);
    double SortStopLoss = 0;
    double SortTakeProfit = 0;
-   if(StopLoss > 0) SortStopLoss = NormalizeDouble(Bid + StopLoss * RealPoint, Digits);
-   if(TP > 0) SortTakeProfit = NormalizeDouble(Bid - TP * RealPoint, Digits);
+   RefreshRates();
+   if(StopLoss > 0) SortStopLoss = NormalizeDouble(Ask + StopLoss * RealPoint, Digits);
+   if(TP > 0) SortTakeProfit = NormalizeDouble(Ask - TP * RealPoint, Digits);
    string comment = " " + Reason + " " + Action;
    if (OrderSend( Symbol(), OP_SELL, _LotSize, Bid, 3, SortStopLoss, SortTakeProfit, "Sell Order"+comment, MagicNumber,0, clrRed) == -1)
       {
@@ -535,7 +551,7 @@ int _Update(int direction){
             if( _BLots == 0.0 ){
                if((OrderOpenPrice()-Ask) >= TakeProfit ){
                   mode = " Close ";
-                  res = OrderClose(OrderTicket(),OrderLots(),MarketInfo(OrderSymbol(),MODE_ASK),3,White);
+                  res = OrderClose(OrderTicket(),OrderLots(),Ask,3,White);
                   }
                else{
                   mode = " Change TP ";
@@ -568,7 +584,7 @@ int _Update(int direction){
             if( _SLots == 0.0 ){ //Close Buy Order
                if((Bid+OrderOpenPrice()) >= TakeProfit ){
                   mode = " Close ";
-                  res = OrderClose(OrderTicket(),OrderLots(),MarketInfo(OrderSymbol(),MODE_BID),3,Yellow);
+                  res = OrderClose(OrderTicket(),OrderLots(),Bid,3,Yellow);
                } else {
                   mode = " Change TP ";
                   res=OrderModify(OrderTicket(),OrderOpenPrice(),0,NormalizeDouble(OrderOpenPrice()+break_even,Digits),0,Blue);
