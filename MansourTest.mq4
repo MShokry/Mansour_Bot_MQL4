@@ -572,6 +572,7 @@ int _Update(int direction){
       return(0);
    }
    Total_orders(true);
+   
    double break_even = 0.0;
    if(_Sell > 0.0 && _Buy > 0.0 && (_SLots != _BLots)){
      break_even = MathAbs(RealPoint * profit / (_BLots - _SLots));
@@ -581,6 +582,12 @@ int _Update(int direction){
    }else { //Boot equal
      break_even = 1.0; //$
    }
+
+   if(_SLots > _BLots)
+      direction = OP_SELL;
+   else if (_SLots < _BLots)
+      direction = OP_BUY;
+
    string comment = " " + Reason + " " + Action;      
    Print("Profit ", profit, " Break Even ", break_even , comment);
    string mode = "";
