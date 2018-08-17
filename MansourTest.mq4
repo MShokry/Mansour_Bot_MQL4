@@ -13,7 +13,7 @@
 To do
 
 // Rety if failure
-
+// Normalize All prices
 **********************************************************************/
 
 //---- Dependencies
@@ -26,6 +26,7 @@ extern string PS_Ex0                   = ">> Lot Size TP SL";
 extern double LotSize                  = 0.01;
 extern double StopLoss                 = 0;
 extern double TakeProfit               = 50;
+extern double Max_Spread               = 35;
 extern string PS_Ex1                   = ">> Timing and Graph";
 extern int shift                       = 1;
 extern int MagicNumber                 = 224455;
@@ -35,6 +36,11 @@ extern double TradeMax                 = 0.2;
 extern string PS_Ex3                   = ">> Exit strategy";
 extern double StopStep                 = 0.004;
 extern double StopMax                  = 0.4;              
+input string PS_Ex4                    = ">> File ";
+input string InpFileName               ="Mansour";       // File name
+input string InpDirectoryName          ="Data";     // Folder name
+input bool Log_all                     = true;
+input bool Log_trades                  = true;
 
 // Global variables
 int LongTicket;
@@ -44,6 +50,9 @@ bool change = false;
 bool ordered = false;
 double last_order;
 string Reason = ""; string Action = "";
+
+int file_handle,file_handle_trade;
+string comment, comment_trade;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -54,6 +63,16 @@ int OnInit()
      Comment("Copyright © http://www.dasstack.com");
      SendNotification("Started on " + (string) Symbol());
      RealPoint = RealPipPoint(Symbol());
+     Print("Symbol=",Symbol());
+     Print("SymbolAllow=",MarketInfo(Symbol(), MODE_TRADEALLOWED));
+     Max_Spread_Reached = false;
+     string file_name = Symbol() + ".csv" ;
+     if(Log_all)
+      file_handle=FileOpen(InpDirectoryName+"//"+InpFileName+file_name,FILE_READ|FILE_WRITE|FILE_CSV|FILE_ANSI);
+     file_name = Symbol() +  "trades.csv" ;
+     if(Log_trades)
+     file_handle_trade=FileOpen(InpDirectoryName+"//"+InpFileName+file_name,FILE_READ|FILE_WRITE|FILE_CSV|FILE_ANSI);
+     //timer = Hour() + ":0" + Minute();
      //RealPoint = 0.0001
 //---
    return(INIT_SUCCEEDED);
@@ -64,6 +83,10 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //--- destroy timer
+   if(Log_all)
+      FileClose(file_handle);
+   if(Log_trades)
+      FileClose(file_handle_trade);
    EventKillTimer();
       
   }
@@ -85,7 +108,7 @@ double _SProfit, _BProfit;
 double profit;
 // Timing
 bool BarM,BarH;
-
+bool Max_Spread_Reached;
 // iSAR
 double trade_sar,trade_sar1,stop_sar;
 // Bars
@@ -102,6 +125,8 @@ bool intersect_H_to_Buy ;
 bool intersect_H_to_Sell ;
 bool Sell_signal ;
 bool Buy_signal ;
+
+
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
@@ -110,8 +135,17 @@ int start()
   {
   //
   //Vars
+   if(MarketInfo(Symbol(), MODE_TRADEALLOWED) == 0.0 ) return 0;
    
-  adxplsH1= iADX(NULL, PERIOD_M15, 14 , PRICE_CLOSE, MODE_PLUSDI, shift );
+   if((MarketInfo(Symbol(),MODE_SPREAD) > Max_Spread )&& !Max_Spread_Reached){
+      _Update(OP_BUY,true);
+      Max_Spread_Reached = true;
+   } else if((MarketInfo(Symbol(),MODE_SPREAD) <= Max_Spread )&& Max_Spread_Reached){
+      _Update(OP_BUY);
+      Max_Spread_Reached = false;
+   }  
+      
+   adxplsH1= iADX(NULL, PERIOD_M15, 14 , PRICE_CLOSE, MODE_PLUSDI, shift );
    adxminusH1= iADX(NULL, PERIOD_M15, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
    adxMinH4 = iADX(NULL, PERIOD_H1, 50,PRICE_CLOSE, MODE_MAIN,shift);
    
@@ -140,6 +174,8 @@ int start()
    BarH = IsBarClosed(PERIOD_M15,0) ;
    BarM = IsBarClosed(PERIOD_M1,1);
    
+   comment = "";
+   comment_trade = "";
    RefreshRates();
    
    Total_orders(false);
@@ -231,17 +267,17 @@ int order_check()
                            
    buy_condition_H = adxplsH1  > adxminusH1;
    buy_condition_M = adxplsM15 > adxminusM15;
-    intersect_M_to_Buy =  ((adxplsM151 < adxminusM151) && (adxplsM15 > adxminusM15));
+   intersect_M_to_Buy =  ((adxplsM151 < adxminusM151) && (adxplsM15 > adxminusM15));
   
    sell_condition_H = (adxplsH1  < adxminusH1);
    sell_condition_M = (adxminusM15 > adxplsM15 );
-    intersect_M_to_Sell =  ((adxplsM151 > adxminusM151) && (adxplsM15 < adxminusM15));
+   intersect_M_to_Sell =  ((adxplsM151 > adxminusM151) && (adxplsM15 < adxminusM15));
    
-    intersect_H_to_Buy = ((adxplsH11 < adxminusH11) && (adxplsH1 > adxminusH1));
-    intersect_H_to_Sell = ((adxplsH11 > adxminusH11) && (adxplsH1 < adxminusH1));
+   intersect_H_to_Buy = ((adxplsH11 < adxminusH11) && (adxplsH1 > adxminusH1));
+   intersect_H_to_Sell = ((adxplsH11 > adxminusH11) && (adxplsH1 < adxminusH1));
    
-    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
-    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
+   Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
+   Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
    //if(adxMin < 15 || adxMinH4 < 10 )
    //   return 0;
@@ -292,16 +328,16 @@ int order_check()
    // Change on M and Hour is reversed
    // May be Close all 
    if( sell_condition_H && intersect_M_to_Buy && (_Buy > 0)){
-      Reason = "#Reason# SH & M2Buy & _Buy";
-      Action = "#Action# Close Sell Diff";
-      if(_BLots < _SLots){
-         _Close(OP_SELL, NormalizeDouble(_SLots -_BLots, Digits));
-         //Total_orders();
-         _Update(OP_BUY);
+     Reason = "#Reason# SH & M2Buy & _Buy";
+     Action = "#Action# Close Sell Diff";
+     if(_BLots < _SLots){
+        _Close(OP_SELL, NormalizeDouble(_SLots -_BLots, Digits));
+        //Total_orders();
+        _Update(OP_BUY);
          }
-         //_Close(OP_BUY, 0);
-         //_Close(OP_SELL, 0);
-      }
+        //_Close(OP_BUY, 0);
+        //_Close(OP_SELL, 0);
+     }
    else if( buy_condition_H && intersect_M_to_Sell && (_Sell > 0)){
       Reason = "#Reason# BH & M2Sell & _Sell";
       Action = "#Action# Close Buy Diff";
@@ -311,9 +347,9 @@ int order_check()
          }
         }
    else if( buy_condition_H && intersect_M_to_Buy && (_Sell > 0) ){
-      Reason = "#Reason# BH & M2B & _Sell";
-      Action = "#Action# Buy Double "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
-      Buy_double(LotSize);
+     Reason = "#Reason# BH & M2B & _Sell";
+     Action = "#Action# Buy Double "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
+     Buy_double(LotSize);
    }
    else if( sell_condition_H && intersect_M_to_Sell  && (_Buy > 0) ){  
      Reason = "#Reason# SH & M2S & _Buy";
@@ -321,14 +357,14 @@ int order_check()
      Sell_double(LotSize);
    }        
   else if( buy_condition_H && intersect_M_to_Buy && (_Sell == 0)){
-     Reason = "#ReasonBH & M2B & !_Sell";
-      Action = "#Action# Buy "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
-    Buy_normal (LotSize,TakeProfit);            
+     Reason = "#Reason BH & M2B & !_Sell";
+     Action = "#Action# Buy "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
+     Buy_normal (LotSize,TakeProfit);            
     }
   else if( sell_condition_H && intersect_M_to_Sell  && (_Buy == 0)  ){
-     Reason = "#ReasonSH & M2S & !_Buy";
-      Action = "#Action# Sell "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
-    Sell_normal(LotSize,TakeProfit);
+     Reason = "#Reason SH & M2S & !_Buy";
+     Action = "#Action# Sell "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
+     Sell_normal(LotSize,TakeProfit);
     }
     
   if(BarM){
@@ -342,8 +378,9 @@ int order_check()
 //| Print                                                            |
 //+------------------------------------------------------------------+ 
   
-void print(){
+void print(bool trade = false){
       Total_orders();
+      if(!trade){
       Comment("Status : \n BH  ", buy_condition_H ," SH  ", sell_condition_H  , "\n" ,
       " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,"\n" ,
       " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , "\n" ,
@@ -353,14 +390,29 @@ void print(){
       " Ttl ", profit
        );
 
-      Print("Status : \n BH  ", buy_condition_H ," SH  ", sell_condition_H  , "\n" ,
-      " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,"\n" ,
-      " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , "\n" ,
-      " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, "\n" ,
-      " SLt ", _SLots,                          " BLt ",_BLots, "\n" ,
-      " Pft ", _SProfit,                        " pft ",_BProfit, "\n" ,
+      Print("Status : BH  ", buy_condition_H ," SH  ", sell_condition_H  ,
+      " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,
+      " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M ,
+      " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, 
+      " SLt ", _SLots,                          " BLt ",_BLots,
+      " Pft ", _SProfit,                        " pft ",_BProfit, 
       " Ttl ", profit
           ); 
+          
+     }
+     string str = ("Status : BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +
+      " H2B "+ (string)  intersect_H_to_Buy+" H2S "+ (string) intersect_H_to_Sell +
+      " BM "+ (string) buy_condition_M +  " SM "+ (string) sell_condition_M +
+      " M2B "+ (string)  intersect_M_to_Buy+  " M2S "+ (string) intersect_M_to_Sell +
+      " SLt "+ (string)   _SLots + " BLt " + (string)  _BLots+
+      " Pft "+ (string)   _SProfit + " pft " + (string)  _BProfit+
+      " Ttl "+ (string)   profit 
+      );
+      
+     if(Log_all) 
+      FileWriteString(file_handle,str + comment +"\r\n");
+     if(Log_trades && trade)
+      FileWriteString(file_handle,str + comment_trade +"\r\n");
 }
 //+------------------------------------------------------------------+
 //| Buy Double Condition                                                   |
@@ -402,7 +454,7 @@ void print(){
    // Refesh lots
    Total_orders();
    // Update All open oreders to break even
-   if(_BLots && _SLots)
+   //if(_BLots && _SLots)
       _Update(OP_BUY);
    }
  }
@@ -415,23 +467,28 @@ void print(){
  {
   if(_LotSize == 0.0)
      _LotSize = LotSize;
-  NormalizeDouble(_LotSize, Digits);
+  _LotSize = NormalizeDouble(_LotSize, 2);
   //Print ("Buying ", _LotSize);
-  double LongStopLoss = 0;
-  double LongTakeProfit = 0;
+  double LongStopLoss = 0.0;
+  double LongTakeProfit = 0.0;
   //if (SL > 0) sl = NormalizeDouble(Bid + SL * Point, Digits);
    RefreshRates();
    if(StopLoss > 0) LongStopLoss = NormalizeDouble(Bid - StopLoss * RealPoint, Digits);
    if(TP > 0) LongTakeProfit = NormalizeDouble(Bid + TP * RealPoint, Digits);
    //LongTicket = OrderSend(Symbol(),OP_BUY,LotSize,Ask,0,0,0,"Buy Order",MagicNumber,0,Green);
-   string comment = " " + Reason + " " + Action;
-   if (OrderSend( Symbol(), OP_BUY, _LotSize, Ask, 3, LongStopLoss, LongTakeProfit, "Buy Order" + comment , MagicNumber,0, clrBlue) == -1)
+   string OrederPlace = ";;SL " + (string) LongStopLoss + " TP " + (string) LongTakeProfit + " At " + (string) Ask + " Lot " + (string) _LotSize;
+   comment = " " + Reason + " " + Action + " " + OrederPlace;
+   if (OrderSend( Symbol(), OP_BUY, _LotSize, Ask, 5, NormalizeDouble(LongStopLoss,Digits), NormalizeDouble(LongTakeProfit, Digits), "Buy Order" + comment , MagicNumber,0, clrBlue) == -1)
    {
        Print("Error order Buy "+(string)ErrorDescription(GetLastError()) +comment);
+       comment_trade = "Error order Buy "+(string)ErrorDescription(GetLastError()) +comment;
+       print(true);
+       
    }
    else{
-      Print("OrderBuy placed successfully " + comment);
-      ordered = true;
+       Print("OrderBuy placed successfully " + comment);
+       comment_trade = "OrderBuy placed successfully " + comment;
+       print(true);
    }
  }
 //+------------------------------------------------------------------+
@@ -474,7 +531,7 @@ void print(){
    // Refesh lots
    Total_orders();
    // Update All open oreders to break even
-   if(_BLots && _SLots)
+   //if(_BLots && _SLots)
       _Update(OP_SELL); 
    }
  }
@@ -487,22 +544,26 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
  {
   if(_LotSize == 0.0)
      _LotSize = LotSize;
-  NormalizeDouble(_LotSize, Digits);
+   _LotSize = NormalizeDouble(_LotSize, 2);
    Print ("Selling ", _LotSize);
-   double SortStopLoss = 0;
-   double SortTakeProfit = 0;
+   double SortStopLoss = 0.0;
+   double SortTakeProfit = 0.0;
    RefreshRates();
    if(StopLoss > 0) SortStopLoss = NormalizeDouble(Ask + StopLoss * RealPoint, Digits);
    if(TP > 0) SortTakeProfit = NormalizeDouble(Ask - TP * RealPoint, Digits);
-   string comment = " " + Reason + " " + Action;
+   string OrederPlace = ";;SL " + (string) SortStopLoss + " TP " + (string) SortTakeProfit + " At " + (string) Ask + " Lot " + (string) _LotSize;
+   comment = " " + Reason + " " + Action + " " + OrederPlace;
    if (OrderSend( Symbol(), OP_SELL, _LotSize, Bid, 3, SortStopLoss, SortTakeProfit, "Sell Order"+comment, MagicNumber,0, clrRed) == -1)
       {
        Print("Error order Sell "+(string)ErrorDescription(GetLastError())+comment);
+       comment_trade ="Error order Sell "+(string)ErrorDescription(GetLastError())+comment;
+       print(true); 
       }
    else
       {
       Print("OrderSell placed successfully"+ comment);
-      ordered = true;
+      comment_trade = "OrderSell placed successfully"+ comment;
+       print(true);
       }
       
  }   
@@ -517,8 +578,8 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
        price = Bid;
    bool res = true;
    
-   string comment = " " + Reason + " " + Action;
-   
+   comment = " " + Reason + " " + Action;
+   string c;
    if(Lots == 0){
    // TP of all 
    for(int i=0;i<OrdersTotal();i++)
@@ -527,11 +588,17 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
          if(OrderSymbol()==Symbol())
             if(OrderType()== direction &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) ){
                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
-                 if(!res)
-                     Print("Error in Closing _Close . Error code=", ErrorDescription(GetLastError()) , comment);
-                  else
-                     Print("Order Closed _Close successfully."+ comment);
-                Print("Order #",OrderTicket()," By Double rev profit: ", OrderTakeProfit() ," Dir ", direction , " Lots " , OrderLots() , comment);
+                 c = " Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit() +" Dir "+(string)  direction + " Lots " +(string)  OrderLots();
+                 if(!res){
+                     Print("Error in Closing _Close . Error code=", ErrorDescription(GetLastError()) , comment ,c);
+                     comment_trade = "Error in Closing _Close . Error code="+ ErrorDescription(GetLastError()) + comment + c;
+                     print(true);
+                  }else{
+                     Print("Order Closed _Close successfully."+ comment+ c );
+                     comment_trade = "Order Closed _Close successfully."+ comment+ c ;
+                     print(true);
+                   }
+                Print(c);
             }
       } 
    }else {
@@ -545,17 +612,22 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
                if(OrderType()==OP_SELL &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) )
                   if(diff >= OrderLots()){
                      res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
-                     Print("Order #",OrderTicket()," By Double rev profit: ", OrderTakeProfit()  , comment);
+                     c = "Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit();
                      diff -=  OrderLots();
                   }else{
                      res = OrderClose(OrderTicket(),diff,price,3,clrBrown);
-                     Print("Order #",OrderTicket()," By Double rev profit: ", OrderTakeProfit() , comment );
+                     c = "Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit();
                      diff = 0;
                   }
-                  if(!res)
-                     Print("Error in OrderModify. Error code=",ErrorDescription(GetLastError()) , comment );
-                  else
-                     Print("Order modified successfully." + comment);
+                  if(!res){
+                     Print("Error in OrderModify. Error code=",ErrorDescription(GetLastError()) , comment ,c);
+                     comment_trade = "Error in OrderModify. Error code="+ErrorDescription(GetLastError()) + comment +c ;
+                     print(true);
+                  }else{
+                     Print("Order modified successfully." + comment + c);
+                     comment_trade = "Order modified successfully." + comment+ c ;
+                     print(true);
+                   }
          }
       }
     } 
@@ -565,7 +637,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
 //| Close Orders function                                                   |
 //+------------------------------------------------------------------+    
 
-int _Update(int direction){
+int _Update(int direction, bool clear = false){
    // Calculate Break even
    if(profit > 10){
       _Close_all();
@@ -579,8 +651,8 @@ int _Update(int direction){
      //break_even += (RealPoint * 15);
    } else if((_Sell > 0.0 || _Buy > 0.0) &&(_SLots != _BLots)) { // Only Sell OR Buy
      break_even = RealPoint * TakeProfit;
-   }else { //Boot equal
-     break_even = 1.0; //$
+   }else{ //Boot equal
+     break_even = 0.0; //$
    }
 
    if(_SLots > _BLots)
@@ -588,12 +660,28 @@ int _Update(int direction){
    else if (_SLots < _BLots)
       direction = OP_BUY;
 
-   string comment = " " + Reason + " " + Action;      
+   comment = " " + Reason + " " + Action;      
    Print("Profit ", profit, " Break Even ", break_even , comment);
    string mode = "";
    // Update all
-   bool res;
-   if(direction == OP_SELL){
+   bool res = true;
+   
+   if (break_even == 0.0 || clear){
+   for(int i=0;i<OrdersTotal();i++)
+      {
+         if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
+         if(OrderSymbol()==Symbol()&&(OrderMagicNumber()==MagicNumber))
+          {
+            mode = " Remove SL && TP @" ;
+            res=OrderModify(OrderTicket(),OrderOpenPrice(),0,0,0,Blue);
+          }
+          mode += " Order " +(string) OrderTicket();
+         if(!res)
+            Print("Error in OrderModify OP_SELL . Error code=",ErrorDescription(GetLastError()),mode);
+         else
+            Print("Order modified successfully. OP_SELL", mode);
+       }
+   } else if(direction == OP_SELL){
       for(int i=0;i<OrdersTotal();i++)
       {
          if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
