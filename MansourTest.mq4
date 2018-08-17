@@ -243,8 +243,8 @@ int order_check()
     Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
     Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
-   if(adxMin < 15 || adxMinH4 < 10 )
-      return 0;
+   //if(adxMin < 15 || adxMinH4 < 10 )
+   //   return 0;
 
    string alert = ("Status : \n BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +  "\n" + 
       " H2B "+ (string)  intersect_H_to_Buy+" H2S "+ (string) intersect_H_to_Sell + "\n" + 
@@ -387,16 +387,16 @@ void print(){
    if(_LotSize > 0){
       if(_Sell){
          double break_even = 0.0 ;
-         if(MathAbs(_BLots  - _SLots + _LotSize))
+         if((_BLots + _LotSize  - _SLots ) > 0.01 )
             break_even = MathAbs( profit / (_BLots  - _SLots + _LotSize));
          else
             break_even = 0 ;
-         Action += " Lot "+ (string) _LotSize + " Points " + (string) break_even;
+         Action += ";; Lot "+ (string) _LotSize + " Points " + (string) break_even;
          //Print ("Buying Double XXXX "+ (string) break_even);
          Buy_normal(_LotSize, break_even);
       }else {
          //Print ("Buying Double XXXXYY ", TakeProfit);
-         Action += " Lot "+ (string) LotSize  + " Points " + (string) TakeProfit;
+         Action += ";; Lot "+ (string) LotSize  + " Points " + (string) TakeProfit;
          Buy_normal(LotSize, TakeProfit);
       }
    // Refesh lots
@@ -459,16 +459,16 @@ void print(){
    if(_LotSize > 0){
       if(_Buy){
          double break_even = 0.0;
-         if (MathAbs(_BLots  - _SLots - _LotSize))
-            break_even = MathAbs( profit / (_BLots  - _SLots - _LotSize));
+         if (( _SLots + _LotSize - _BLots  ) > 0.01)
+            break_even = MathAbs( profit / ( _SLots + _LotSize - _BLots ));
          else
             break_even = 0 ;
          //Print ("Selling Double XXXX "+ (string) break_even);
-         Action += " Lot "+ (string) _LotSize + " Points " + (string) break_even;
+         Action += ";; Lot "+ (string) _LotSize + " Points " + (string) break_even;
          Sell_normal(_LotSize, break_even);
       }else{
          //Print ("Selling Double XXXXZZ ",TakeProfit);
-         Action += " Lot "+ (string) LotSize + " Points " + (string) TakeProfit;
+         Action += ";; Lot "+ (string) LotSize + " Points " + (string) TakeProfit;
          Sell_normal(LotSize,TakeProfit);
       }
    // Refesh lots
