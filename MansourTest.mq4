@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.20"
+#property version   "2.40"
 #property strict
 
 
@@ -589,12 +589,12 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
                  c = " Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit() +" Dir "+(string)  direction + " Lots " +(string)  OrderLots();
                  if(!res){
-                     Print("Error in Closing _Close . Error code=", ErrorDescription(GetLastError()) , comment ,c);
-                     comment_trade = "Error in Closing _Close . Error code="+ ErrorDescription(GetLastError()) + comment + c;
+                     Print("Error in Closing _Close ALL . Error code=", ErrorDescription(GetLastError()) , comment ,c);
+                     comment_trade = "Error in Closing _Close ALL . Error code="+ ErrorDescription(GetLastError()) + comment + c;
                      print(true);
                   }else{
-                     Print("Order Closed _Close successfully."+ comment+ c );
-                     comment_trade = "Order Closed _Close successfully."+ comment+ c ;
+                     Print("Order Closed _Close ALL successfully."+ comment+ c );
+                     comment_trade = "Order Closed _Close ALL successfully."+ comment+ c ;
                      print(true);
                    }
                 Print(c);
@@ -611,20 +611,20 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
                if(OrderType()==OP_SELL &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) )
                   if(diff >= OrderLots()){
                      res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
-                     c = "Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit();
+                     c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
                      diff -=  OrderLots();
                   }else{
                      res = OrderClose(OrderTicket(),diff,price,3,clrBrown);
-                     c = "Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit();
+                     c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
                      diff = 0;
                   }
                   if(!res){
-                     Print("Error in OrderModify. Error code=",ErrorDescription(GetLastError()) , comment ,c);
-                     comment_trade = "Error in OrderModify. Error code="+ErrorDescription(GetLastError()) + comment +c ;
+                     Print("Error in _Close. Error code=",ErrorDescription(GetLastError()) , comment ,c);
+                     comment_trade = "Error in _Close. Error code="+ErrorDescription(GetLastError()) + comment +c ;
                      print(true);
                   }else{
-                     Print("Order modified successfully." + comment + c);
-                     comment_trade = "Order modified successfully." + comment+ c ;
+                     Print("Order _Close successfully." + comment + c);
+                     comment_trade = "Order _Close successfully." + comment+ c ;
                      print(true);
                    }
          }
