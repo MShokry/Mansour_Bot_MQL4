@@ -601,7 +601,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
             }
       } 
    }else {
-   double diff = _SLots - _BLots;
+   double diff = Lots;
    if(diff > 0.0){
       for(int i=0;i<OrdersTotal();i++)
          {
