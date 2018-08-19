@@ -252,7 +252,7 @@ int order_check()
       " M2B "+ (string)  intersect_M_to_Buy+  " M2S "+ (string) intersect_M_to_Sell );
       
    if(BarH){
-      SendNotification("Hour Change" + alert);
+      SendNotification("Hour Change");
       // Change on H
       if(intersect_H_to_Buy && Buy_signal ){
          if (_Sell > 0 ){
@@ -353,12 +353,12 @@ void print(){
       " Ttl ", profit
        );
 
-      Print("Status : \n BH  ", buy_condition_H ," SH  ", sell_condition_H  , "\n" ,
-      " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,"\n" ,
-      " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , "\n" ,
-      " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, "\n" ,
-      " SLt ", _SLots,                          " BLt ",_BLots, "\n" ,
-      " Pft ", _SProfit,                        " pft ",_BProfit, "\n" ,
+      Print("Status : BH  ", buy_condition_H ," SH  ", sell_condition_H  , 
+      " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,
+      " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , 
+      " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, 
+      " SLt ", _SLots,                          " BLt ",_BLots, 
+      " Pft ", _SProfit,                        " pft ",_BProfit, 
       " Ttl ", profit
           ); 
 }
@@ -441,7 +441,7 @@ void print(){
  void Sell_double(double Max_Lots)
  {
    // TP of open sell + diff
-   _Close(OP_BUY,0);
+   _Close(OP_BUY,0.0);
    // Refesh lots
    Total_orders();
    // open new 2x diff sell 
@@ -519,7 +519,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
    
    string comment = " " + Reason + " " + Action;
    
-   if(Lots == 0){
+   if(Lots == 0.0 ){
    // TP of all 
    for(int i=0;i<OrdersTotal();i++)
       {
@@ -528,14 +528,15 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
             if(OrderType()== direction &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) ){
                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
                  if(!res)
-                     Print("Error in Closing _Close . Error code=", ErrorDescription(GetLastError()) , comment);
+                     Print("Error in Closing _Close All . Error code=", ErrorDescription(GetLastError()) , comment);
                   else
-                     Print("Order Closed _Close successfully."+ comment);
+                     Print("Order Closed _Close All successfully."+ comment);
                 Print("Order #",OrderTicket()," By Double rev profit: ", OrderTakeProfit() ," Dir ", direction , " Lots " , OrderLots() , comment);
             }
       } 
-   }else {
-   double diff = _SLots - _BLots;
+   } else {
+   double diff;
+   diff = Lots;
    if(diff > 0.0){
       for(int i=0;i<OrdersTotal();i++)
          {
