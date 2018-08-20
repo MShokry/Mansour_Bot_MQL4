@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.50"
+#property version   "2.52"
 #property strict
 
 
@@ -664,13 +664,14 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
             if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
             if (prft == 0.0) continue;
             if((OrderSymbol()==Symbol()) && (OrderType()==direction) &&(OrderMagicNumber()==MagicNumber) ){
-               if(prft >= (-OrderProfit())){
+            double diff =  prft + OrderProfit() - (RealPoint * MarketInfo(Symbol(),MODE_SPREAD));
+               if(diff > 0.0){
                   res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
                   c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
                   if(res){
-                     prft -= OrderProfit();
+                     prft = diff;
                      }
-               }
+               
                if(!res){
                   Print("Error in _Close Profit. Error code=",ErrorDescription(GetLastError()) , comment ,c);
                   comment_trade = "Error in _Close Profit. Error code="+ErrorDescription(GetLastError()) + comment +c ;
@@ -680,6 +681,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
                   comment_trade = "Order _Close Profit successfully." + comment+ c ;
                   print(true);
                 }
+              }
             }
          }
   }
