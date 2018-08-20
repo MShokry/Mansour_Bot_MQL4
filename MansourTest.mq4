@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.40"
+#property version   "2.50"
 #property strict
 
 
@@ -40,7 +40,7 @@ input string InpFileName               ="Mansour";       // File name
 input string InpDirectoryName          ="Data";     // Folder name
 input bool Log_all                     = true;
 input bool Log_trades                  = true;
-
+input bool Close_Profit                = true;
 // Global variables
 int LongTicket;
 int ShortTicket;
@@ -65,12 +65,12 @@ int OnInit()
      Print("Symbol=",Symbol());
      Print("SymbolAllow=",MarketInfo(Symbol(), MODE_TRADEALLOWED));
      Max_Spread_Reached = false;
-     string file_name = Symbol() + ".csv" ;
+     string file_name = Symbol() + ".txt" ;
      if(Log_all)
-      file_handle=FileOpen(InpDirectoryName+"//"+InpFileName+file_name,FILE_READ|FILE_WRITE|FILE_CSV|FILE_ANSI);
-     file_name = Symbol() +  "trades.csv" ;
+      file_handle=FileOpen(InpDirectoryName+"//"+InpFileName+file_name,FILE_READ|FILE_WRITE);
+     file_name = Symbol() +  "trades.txt" ;
      if(Log_trades)
-     file_handle_trade=FileOpen(InpDirectoryName+"//"+InpFileName+file_name,FILE_READ|FILE_WRITE|FILE_CSV|FILE_ANSI);
+     file_handle_trade=FileOpen(InpDirectoryName+"//"+InpFileName+file_name,FILE_READ|FILE_WRITE);
      //timer = Hour() + ":0" + Minute();
      //RealPoint = 0.0001
 //---
@@ -278,8 +278,8 @@ int order_check()
    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
-   //if(adxMin < 15 || adxMinH4 < 10 )
-   //   return 0;
+   if(adxMin < 15 || adxMinH4 < 10 )
+      return 0;
 
    string alert = ("Status : \n BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +  "\n" + 
       " H2B "+ (string)  intersect_H_to_Buy+" H2S "+ (string) intersect_H_to_Sell + "\n" + 
@@ -411,7 +411,7 @@ void print(bool trade = false){
      if(Log_all) 
       FileWriteString(file_handle,str + comment +"\r\n");
      if(Log_trades && trade)
-      FileWriteString(file_handle,str + comment_trade +"\r\n");
+      FileWriteString(file_handle_trade,str + comment_trade +"\r\n");
 }
 //+------------------------------------------------------------------+
 //| Buy Double Condition                                                   |
@@ -600,40 +600,91 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
                 Print(c);
             }
       } 
-   }else {
+   } else {
    double diff = Lots;
+   double prof = 0.0;
    if(diff > 0.0){
       for(int i=0;i<OrdersTotal();i++)
          {
             if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
             if (diff == 0.0) continue;
-            if(OrderSymbol()==Symbol())
-               if(OrderType()==OP_SELL &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) )
-                  if(diff >= OrderLots()){
-                     res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
-                     c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
+            if((OrderSymbol()==Symbol()) && (OrderType()==direction) &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) ){
+               if(diff >= OrderLots()){
+                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
+                  c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
+                  if(res){
                      diff -=  OrderLots();
-                  }else{
-                     res = OrderClose(OrderTicket(),diff,price,3,clrBrown);
-                     c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
+                     prof += OrderProfit();
+                     }
+               }else{
+                  res = OrderClose(OrderTicket(),diff,price,3,clrBrown);
+                  c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
+                  if(res){
                      diff = 0;
-                  }
-                  if(!res){
-                     Print("Error in _Close. Error code=",ErrorDescription(GetLastError()) , comment ,c);
-                     comment_trade = "Error in _Close. Error code="+ErrorDescription(GetLastError()) + comment +c ;
-                     print(true);
-                  }else{
-                     Print("Order _Close successfully." + comment + c);
-                     comment_trade = "Order _Close successfully." + comment+ c ;
-                     print(true);
-                   }
+                     prof += OrderProfit();
+                     }
+               }
+               if(!res){
+                  Print("Error in _Close. Error code=",ErrorDescription(GetLastError()) , comment ,c);
+                  comment_trade = "Error in _Close. Error code="+ErrorDescription(GetLastError()) + comment +c ;
+                  print(true);
+               }else{
+                  Print("Order _Close successfully." + comment + c);
+                  comment_trade = "Order _Close successfully." + comment+ c ;
+                  print(true);
+                }
+            }
+         }
+         if(Close_Profit && prof> 0.0){
+            int rev_direction = OP_BUY;
+            if(direction == OP_BUY)
+                rev_direction = OP_SELL;
+            _Close_Profit(rev_direction,prof);
          }
       }
     } 
   }
-  
-   //+------------------------------------------------------------------+
-//| Close Orders function                                                   |
+ //+------------------------------------------------------------------+
+//| Close Profit function                                                   |
+//+------------------------------------------------------------------+    
+ void _Close_Profit(int direction, double prof){
+   double price = Ask;
+   if(direction == OP_SELL)
+       price = Ask;
+    else if(direction == OP_BUY)
+       price = Bid;
+   bool res = true;
+   
+   comment = " " + Reason + " " + Action;
+   string c;
+   double prft = prof;
+   // TP of all 
+      for(int i=0;i<OrdersTotal();i++)
+         {
+            if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
+            if (prft == 0.0) continue;
+            if((OrderSymbol()==Symbol()) && (OrderType()==direction) &&(OrderMagicNumber()==MagicNumber) ){
+               if(prft >= (-OrderProfit())){
+                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
+                  c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
+                  if(res){
+                     prft -= OrderProfit();
+                     }
+               }
+               if(!res){
+                  Print("Error in _Close Profit. Error code=",ErrorDescription(GetLastError()) , comment ,c);
+                  comment_trade = "Error in _Close Profit. Error code="+ErrorDescription(GetLastError()) + comment +c ;
+                  print(true);
+               }else{
+                  Print("Order _Close Profit successfully." + comment + c);
+                  comment_trade = "Order _Close Profit successfully." + comment+ c ;
+                  print(true);
+                }
+            }
+         }
+  }
+//+------------------------------------------------------------------+
+//| Update Orders function                                           |
 //+------------------------------------------------------------------+    
 
 int _Update(int direction, bool clear = false){
