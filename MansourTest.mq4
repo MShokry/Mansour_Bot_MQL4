@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.52"
+#property version   "2.54"
 #property strict
 
 
@@ -278,8 +278,8 @@ int order_check()
    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
-   if(adxMin < 15 || adxMinH4 < 10 )
-      return 0;
+   //if(adxMin < 15 || adxMinH4 < 10 )
+   //   return 0;
 
    string alert = ("Status : \n BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +  "\n" + 
       " H2B "+ (string)  intersect_H_to_Buy+" H2S "+ (string) intersect_H_to_Sell + "\n" + 
@@ -635,7 +635,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
                 }
             }
          }
-         if(Close_Profit && prof> 0.0){
+         if(Close_Profit &&( prof> 0.0 )&& ((_SLots + _BLots) < 0.2)){
             int rev_direction = OP_BUY;
             if(direction == OP_BUY)
                 rev_direction = OP_SELL;
