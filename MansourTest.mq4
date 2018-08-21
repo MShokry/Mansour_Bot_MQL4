@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.55"
+#property version   "2.56"
 #property strict
 
 
@@ -35,13 +35,21 @@ extern double TradeStep                = 0.002;
 extern double TradeMax                 = 0.2;
 extern string PS_Ex3                   = ">> Exit strategy";
 extern double StopStep                 = 0.004;
-extern double StopMax                  = 0.4;              
-input string PS_Ex4                    = ">> File ";
+extern double StopMax                  = 0.4;    
+input string PS_Ex4                    = ">> Close diff When Small frame change ";
+input bool Close_Reverse               = true;
+input double Min_reverse_lot             = 0.0;
+input double Max_reverse_lot             = 100.0;          
+input string PS_Ex5                    = ">> Sum Profit and Close other ";
+input bool Close_Profit                = true;
+input double Min_close_lot             = 0.0;
+input double Max_close_lot             = 100.0;
+input string PS_Ex6                    = ">> File ";
 input string InpFileName               ="Mansour";       // File name
 input string InpDirectoryName          ="Data";     // Folder name
 input bool Log_all                     = true;
 input bool Log_trades                  = true;
-input bool Close_Profit                = true;
+
 
 // Global variables
 int LongTicket;
@@ -333,10 +341,12 @@ int order_check()
      Reason = "#Reason# SH & M2Buy & _Buy";
      Action = "#Action# Close Sell Diff";
      if(_BLots < _SLots){
+         if(Close_Reverse && ((_SLots + _BLots) < Max_reverse_lot) && ((_SLots + _BLots) > Min_reverse_lot)){
         _Close(OP_SELL, NormalizeDouble(_SLots -_BLots, Digits));
         //Total_orders();
         _Update(OP_BUY);
-         }
+        }
+        }
         //_Close(OP_BUY, 0);
         //_Close(OP_SELL, 0);
      }
@@ -344,9 +354,11 @@ int order_check()
       Reason = "#Reason# BH & M2Sell & _Sell";
       Action = "#Action# Close Buy Diff";
       if(_BLots > _SLots){
-         _Close(OP_BUY, NormalizeDouble((_BLots - _SLots), Digits));
-         _Update(OP_SELL);
-         }
+         if(Close_Reverse && ((_SLots + _BLots) < Max_reverse_lot) && ((_SLots + _BLots) > Min_reverse_lot)){
+            _Close(OP_BUY, NormalizeDouble((_BLots - _SLots), Digits));
+            _Update(OP_SELL);
+            }
+          }
         }
    else if( buy_condition_H && intersect_M_to_Buy && (_Sell > 0) ){
      Reason = "#Reason# BH & M2B & _Sell";
@@ -638,7 +650,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
                 }
             }
          }
-         if(Close_Profit &&( prof> 0.0 )&& ((_SLots + _BLots) < 0.2)){
+         if(Close_Profit &&( prof> 0.0 )&& ((_SLots + _BLots) < Max_close_lot) && ((_SLots + _BLots) > Min_close_lot)){
             int rev_direction = OP_BUY;
             if(direction == OP_BUY)
                 rev_direction = OP_SELL;
