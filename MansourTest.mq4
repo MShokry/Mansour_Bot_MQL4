@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.54"
+#property version   "2.55"
 #property strict
 
 
@@ -30,6 +30,7 @@ extern string PS_Ex1                   = ">> Timing and Graph";
 extern int shift                       = 1;
 extern int MagicNumber                 = 224455;
 extern string PS_Ex2                   = ">> Entry strategy";
+extern bool disableSar                 = false;
 extern double TradeStep                = 0.002;
 extern double TradeMax                 = 0.2;
 extern string PS_Ex3                   = ">> Exit strategy";
@@ -41,6 +42,7 @@ input string InpDirectoryName          ="Data";     // Folder name
 input bool Log_all                     = true;
 input bool Log_trades                  = true;
 input bool Close_Profit                = true;
+
 // Global variables
 int LongTicket;
 int ShortTicket;
@@ -144,22 +146,26 @@ int start()
       Max_Spread_Reached = false;
    }  
       
-   adxplsH1= iADX(NULL, PERIOD_M15, 14 , PRICE_CLOSE, MODE_PLUSDI, shift );
-   adxminusH1= iADX(NULL, PERIOD_M15, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
-   adxMinH4 = iADX(NULL, PERIOD_H1, 50,PRICE_CLOSE, MODE_MAIN,shift);
+   //----
+      adxplsH1= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_PLUSDI, shift );
+   adxminusH1= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
+   adxMinH4 = iADX(NULL, PERIOD_D1, 50,PRICE_CLOSE, MODE_MAIN,shift);
    
    adxplsM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
    adxminusM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
    
-   adxplsM15= iADX(NULL, PERIOD_M1, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
-   adxminusM15= iADX(NULL, PERIOD_M1, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
-   adxMin = iADX(NULL, PERIOD_M1, 14,PRICE_CLOSE, MODE_MAIN,shift);
+   adxplsM15= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
+   adxminusM15= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
+   adxMin = iADX(NULL, PERIOD_H1, 14,PRICE_CLOSE, MODE_MAIN,shift);
    
-   adxplsH11= iADX(NULL, PERIOD_M15, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
-   adxminusH11= iADX(NULL, PERIOD_M15, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
+   adxplsH11= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
+   adxminusH11= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
    
-   adxplsM151= iADX(NULL, PERIOD_M1, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
-   adxminusM151= iADX(NULL, PERIOD_M1, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
+   adxplsM151= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
+   adxminusM151= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
+   
+   
+   
    
    trade_sar  = iSAR(Symbol(), PERIOD_M15, TradeStep, TradeMax, shift);
    trade_sar1 = iSAR(Symbol(), PERIOD_M15, TradeStep, TradeMax, shift+1);
@@ -289,7 +295,7 @@ int order_check()
    if(BarH){
       SendNotification("Hour Change" + alert);
       // Change on H
-      if(intersect_H_to_Buy && Buy_signal ){
+      if(intersect_H_to_Buy && (Buy_signal || disableSar ) ){
          if (_Sell > 0 ){
             Reason = "#Reason# H2Buy & _Sell";
             Action = "#Action# Buy Double ";
@@ -305,7 +311,7 @@ int order_check()
             return (0);
             }
          }
-      if(intersect_H_to_Sell && Sell_signal){
+      if(intersect_H_to_Sell && (Sell_signal || disableSar ) ){
          if (_Buy > 0 ){
             Reason = "#Reason# H2Sell & _Buy";
             Action = "#Action# Sell Double ";
