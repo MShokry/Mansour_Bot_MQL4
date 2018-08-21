@@ -136,7 +136,7 @@ int start()
   {
   //
   //Vars
-   if(MarketInfo(Symbol(), MODE_TRADEALLOWED) == 0.0 ) return 0;
+   //if(MarketInfo(Symbol(), MODE_TRADEALLOWED) == 0.0 ) return 0;
    
    if((MarketInfo(Symbol(),MODE_SPREAD) > Max_Spread )&& !Max_Spread_Reached){
       _Update(OP_BUY,true);
@@ -164,9 +164,6 @@ int start()
    adxplsM151= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
    adxminusM151= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
    
-   
-   
-   
    trade_sar  = iSAR(Symbol(), PERIOD_M15, TradeStep, TradeMax, shift);
    trade_sar1 = iSAR(Symbol(), PERIOD_M15, TradeStep, TradeMax, shift+1);
    stop_sar   = iSAR(Symbol(), PERIOD_M15, StopStep, StopMax, shift);
@@ -176,8 +173,8 @@ int start()
    HIGH   = iHigh(Symbol(), PERIOD_M15, shift);
    LOW    = iLow(Symbol(), PERIOD_M15, shift);
    
-   BarH = IsBarClosed(PERIOD_M15,0) ;
-   BarM = IsBarClosed(PERIOD_M1,1);
+   BarH = IsBarClosed(PERIOD_H4,0) ;
+   BarM = IsBarClosed(PERIOD_H1,1);
    
    comment = "";
    comment_trade = "";
