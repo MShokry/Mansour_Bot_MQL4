@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.57"
+#property version   "2.56"
 #property strict
 
 
@@ -199,8 +199,8 @@ int start()
    HIGH   = iHigh(Symbol(), HiFrame, shift);
    LOW    = iLow(Symbol(), HiFrame, shift);
    
-   BarH = IsBarClosed(PERIOD_H4,0) ;
-   BarM = IsBarClosed(PERIOD_H1,1);
+   BarH = IsBarClosed(HiFrame,0) ;
+   BarM = IsBarClosed(LoFrame,1);
    
    comment = "";
    comment_trade = "";
@@ -308,11 +308,7 @@ int order_check()
    // H4 Frame
    sell_condition_H4 = (adxPlsH4  < adxMinusH4);
    buy_condition_H4 = adxPlsH4  > adxMinusH4;
-
-   // Hi Frame
-   sell_condition_H = (adxPlsHi  < adxMinusHi);
-   buy_condition_H = adxPlsHi  > adxMinusHi;
-
+   // Sar
    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
