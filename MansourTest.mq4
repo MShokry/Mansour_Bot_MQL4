@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.56"
+#property version   "2.57"
 #property strict
 
 
@@ -39,13 +39,17 @@ extern double StopStep                 = 0.004;
 extern double StopMax                  = 0.4;    
 input string PS_Ex4                    = ">> Close diff When Small frame change ";
 input bool Close_Reverse               = true;
-input double Min_reverse_lot             = 0.0;
-input double Max_reverse_lot             = 100.0;          
+input double Min_reverse_lot           = 0.0;
+input double Max_reverse_lot           = 100.0;          
 input string PS_Ex5                    = ">> Sum Profit and Close other ";
 input bool Close_Profit                = true;
 input double Min_close_lot             = 0.0;
 input double Max_close_lot             = 100.0;
-input string PS_Ex6                    = ">> File ";
+input string PS_Ex6                    = ">> Close Rev HiFrame change ";
+input bool Close_Reverse_Hi               = true;
+input double Min_reverse_Hi_lot           = 0.0;
+input double Max_reverse_Hi_lot           = 100.0; 
+input string PS_Ex7                    = ">> File ";
 input string InpFileName               ="Mansour";       // File name
 input string InpDirectoryName          ="Data";     // Folder name
 input bool Log_all                     = true;
@@ -158,10 +162,8 @@ int start()
       _Update(OP_BUY);
       Max_Spread_Reached = false;
    }  
-   int LoFrame = PERIOD_M1;
-   int HiFrame = PERIOD_M15;
-   int H1Frame = PERIOD_H1;   
-   int H4Frame = PERIOD_H4;
+   int LoFrame = PERIOD_H1;
+   int HiFrame = PERIOD_H4;
    //---- Low Frame 
    adxPlsLo= iADX(NULL, LoFrame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
    adxMinusLo= iADX(NULL, LoFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
@@ -172,16 +174,6 @@ int start()
    adxMinusHi= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
    adxPlsHi1= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
    adxMinusHi1= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
-   //---- H1 Frame 
-   adxPlsH1= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
-   adxMinusH1= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
-   adxPlsH11= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
-   adxMinusH11= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
-   //---- H4 Frame 
-   adxPlsH4= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
-   adxMinusH4= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
-   adxPlsH41= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
-   adxMinusH41= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
    //---- Main Filter  
    adxMainH4 = iADX(NULL, PERIOD_D1, 50,PRICE_CLOSE, MODE_MAIN,shift);
    adxMain = iADX(NULL, LoFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
@@ -217,75 +209,7 @@ int start()
    return(0);
    
 }
-//+------------------------------------------------------------------+
-//| Pip Point Function                                                  |
-//+------------------------------------------------------------------+
-double RealPipPoint(string Currency)
-  {
-    double CalcPoints;
-    CalcPoints = 0.001;
-    double CalcDigits = MarketInfo(Currency,MODE_DIGITS); 
-    if(CalcDigits == 4 || CalcDigits == 5) CalcPoints = 0.00001;
-    return(CalcPoints);
-  }
 
-//+------------------------------------------------------------------+
-//| Timer function                                                   |
-//+------------------------------------------------------------------+
-void OnTimer()
-  {
-//---
-   ordered = false;
-  }
-
-//+------------------------------------------------------------------+
-//| Clock function                                                   |
-//+------------------------------------------------------------------+
-bool IsBarClosed(int timeframe,int index)
-{
-    static datetime lastbartime[3];
-
-    if(iTime(NULL,timeframe,1)==lastbartime[index]) // wait for new bar
-        return(false);
-    lastbartime[index]=iTime(NULL,timeframe,1);
-    return(true);
-}
-//+------------------------------------------------------------------+
-//| Totals function                                                  |
-//+------------------------------------------------------------------+
-void Total_orders(bool P = true)
-{
-   _CountOrd=0;_Buy=0;_Sell=0;
-   _SLots = 0.0; _BLots =0.0;
-   profit = 0.0;
-   _BProfit = 0.0; _SProfit = 0.0;
-   RefreshRates();
-   for(int i=0;i<OrdersTotal();i++)
-   {
-      if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
-      if(OrderSymbol()==Symbol()&&(OrderMagicNumber()==MagicNumber))
-      {
-         if(OrderType()==OP_BUY){
-         _CountOrd++;
-         _Buy++;
-         _BLots += OrderLots();
-         _BProfit += OrderProfit()+OrderCommission()+OrderSwap();
-         }else if(OrderType()==OP_SELL){
-         _CountOrd++;
-         _Sell++;
-         _SLots += OrderLots();
-         _SProfit += OrderProfit()+OrderCommission()+OrderSwap();
-         }
-         profit+=OrderProfit()+OrderCommission()+OrderSwap();
-      }
-   }
-   if(P)
-      Print("Total " + IntegerToString( _CountOrd) 
-      + " Buy " + IntegerToString(_Buy) + " = " + (string) _BLots 
-      + " Sell " + IntegerToString(_Sell) + " = " + (string) _SLots 
-      + " Profit " + (string) profit
-      );
-}
 //+------------------------------------------------------------------+
 //| Order Process                                                   |
 //+------------------------------------------------------------------+
@@ -412,6 +336,75 @@ int order_check()
  }
 
 //+------------------------------------------------------------------+
+//| Pip Point Function                                                  |
+//+------------------------------------------------------------------+
+double RealPipPoint(string Currency)
+  {
+    double CalcPoints;
+    CalcPoints = 0.001;
+    double CalcDigits = MarketInfo(Currency,MODE_DIGITS); 
+    if(CalcDigits == 4 || CalcDigits == 5) CalcPoints = 0.00001;
+    return(CalcPoints);
+  }
+
+//+------------------------------------------------------------------+
+//| Timer function                                                   |
+//+------------------------------------------------------------------+
+void OnTimer()
+  {
+//---
+   ordered = false;
+  }
+
+//+------------------------------------------------------------------+
+//| Clock function                                                   |
+//+------------------------------------------------------------------+
+bool IsBarClosed(int timeframe,int index)
+{
+    static datetime lastbartime[3];
+
+    if(iTime(NULL,timeframe,1)==lastbartime[index]) // wait for new bar
+        return(false);
+    lastbartime[index]=iTime(NULL,timeframe,1);
+    return(true);
+}
+//+------------------------------------------------------------------+
+//| Totals function                                                  |
+//+------------------------------------------------------------------+
+void Total_orders(bool P = true)
+{
+   _CountOrd=0;_Buy=0;_Sell=0;
+   _SLots = 0.0; _BLots =0.0;
+   profit = 0.0;
+   _BProfit = 0.0; _SProfit = 0.0;
+   RefreshRates();
+   for(int i=0;i<OrdersTotal();i++)
+   {
+      if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
+      if(OrderSymbol()==Symbol()&&(OrderMagicNumber()==MagicNumber))
+      {
+         if(OrderType()==OP_BUY){
+         _CountOrd++;
+         _Buy++;
+         _BLots += OrderLots();
+         _BProfit += OrderProfit()+OrderCommission()+OrderSwap();
+         }else if(OrderType()==OP_SELL){
+         _CountOrd++;
+         _Sell++;
+         _SLots += OrderLots();
+         _SProfit += OrderProfit()+OrderCommission()+OrderSwap();
+         }
+         profit+=OrderProfit()+OrderCommission()+OrderSwap();
+      }
+   }
+   if(P)
+      Print("Total " + IntegerToString( _CountOrd) 
+      + " Buy " + IntegerToString(_Buy) + " = " + (string) _BLots 
+      + " Sell " + IntegerToString(_Sell) + " = " + (string) _SLots 
+      + " Profit " + (string) profit
+      );
+}
+//+------------------------------------------------------------------+
 //| Print                                                            |
 //+------------------------------------------------------------------+ 
   
@@ -452,13 +445,15 @@ void print(bool trade = false){
       FileWriteString(file_handle_trade,str + comment_trade +"\r\n");
 }
 //+------------------------------------------------------------------+
-//| Buy Double Condition                                                   |
+//| Buy Double Condition                                             |
 //+------------------------------------------------------------------+ 
   
  void Buy_double(double Max_Lots)
  {
+  if(Close_Reverse_Hi && ((_SLots + _BLots) < Max_reverse_Hi_lot) && ((_SLots + _BLots) > Min_reverse_Hi_lot)){
    // TP of open sell + diff
    _Close(OP_SELL,0);
+ }
    // Refesh lots
    Total_orders();
    // open new 2x diff sell 
@@ -534,8 +529,10 @@ void print(bool trade = false){
   
  void Sell_double(double Max_Lots)
  {
-   // TP of open sell + diff
-   _Close(OP_BUY,0);
+  if(Close_Reverse_Hi && ((_SLots + _BLots) < Max_reverse_Hi_lot) && ((_SLots + _BLots) > Min_reverse_Hi_lot)){
+     // TP of open sell + diff
+    _Close(OP_BUY,0);
+  }
    // Refesh lots
    Total_orders();
    // open new 2x diff sell 
@@ -702,7 +699,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
     if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
     if (prft == 0.0) continue;
     if((OrderSymbol()==Symbol()) && (OrderType()==direction) &&(OrderMagicNumber()==MagicNumber) ){
-    double diff =  prft + OrderProfit() - (RealPoint * MarketInfo(Symbol(),MODE_SPREAD));
+    double diff =  prft + OrderProfit() - (RealPoint * MarketInfo(Symbol(),MODE_SPREAD) );
        if(diff > 0.0){
           res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
           c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
