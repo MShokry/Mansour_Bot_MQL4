@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.56"
+#property version   "2.57"
 #property strict
 
 
@@ -13,6 +13,7 @@
 To do
 // Rety if failure
 // Normalize All prices
+// REduce Acumalited Loss
 **********************************************************************/
 
 //---- Dependencies
@@ -103,14 +104,19 @@ void OnDeinit(const int reason)
 //| Expert Global          Vars                                      |
 //+------------------------------------------------------------------+
 
-double adxplsH1,adxminusH1;
-double adxplsH11,adxminusH11;
-double adxminusM15,adxplsM15;
+double adxPlsHi,adxMinusHi;
+double adxPlsHi1,adxMinusHi1;
+double adxMinusLo,adxPlsLo;
+double adxMinusLo1,adxPlsLo1;
+double adxMinusH1,adxPlsH1;
+double adxMinusH11,adxPlsH11;
+double adxMinusH4,adxPlsH4;
+double adxMinusH41,adxPlsH41;
 double adxminusM30,adxplsM30;
-double adxminusM151,adxplsM151;
-double lastP,lastM;
-double lastH;
-double adxMin,adxMinH4;
+double adxMain,adxMainH4;
+
+double lastP,lastM,lastH;
+
 int _CountOrd, _Buy, _Sell;
 double _SLots,_BLots;
 double _SProfit, _BProfit;
@@ -122,18 +128,17 @@ bool Max_Spread_Reached;
 double trade_sar,trade_sar1,stop_sar;
 // Bars
 double CLOSE,CLOSE1,HIGH,LOW;
+// Conditions ADX
+bool buy_condition_M,sell_condition_M ;
+bool buy_condition_H,sell_condition_H ;
+bool intersect_M_to_Buy,intersect_M_to_Sell;
+bool intersect_H_to_Sell,intersect_H_to_Buy ;
+// Main Filters
+bool buy_condition_H1,sell_condition_H1 ;
+bool buy_condition_H4,sell_condition_H4;
 
-
-bool buy_condition_H ;
-bool buy_condition_M ;
-bool intersect_M_to_Buy;
-bool sell_condition_H ;
-bool sell_condition_M ;
-bool intersect_M_to_Sell ;
-bool intersect_H_to_Buy ;
-bool intersect_H_to_Sell ;
-bool Sell_signal ;
-bool Buy_signal ;
+// Sar
+bool Sell_signal, Buy_signal ;
 
 
 //+------------------------------------------------------------------+
@@ -153,33 +158,46 @@ int start()
       _Update(OP_BUY);
       Max_Spread_Reached = false;
    }  
+   int LoFrame = PERIOD_M1;
+   int HiFrame = PERIOD_M15;
+   int H1Frame = PERIOD_H1;   
+   int H4Frame = PERIOD_H4;
+   //---- Low Frame 
+   adxPlsLo= iADX(NULL, LoFrame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
+   adxMinusLo= iADX(NULL, LoFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
+   adxPlsLo1= iADX(NULL, LoFrame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
+   adxMinusLo1= iADX(NULL, LoFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
+   //---- High Frame 
+   adxPlsHi= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift );
+   adxMinusHi= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
+   adxPlsHi1= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
+   adxMinusHi1= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
+   //---- H1 Frame 
+   adxPlsH1= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
+   adxMinusH1= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
+   adxPlsH11= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
+   adxMinusH11= iADX(NULL, H1Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
+   //---- H4 Frame 
+   adxPlsH4= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
+   adxMinusH4= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
+   adxPlsH41= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
+   adxMinusH41= iADX(NULL, H4Frame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
+   //---- Main Filter  
+   adxMainH4 = iADX(NULL, PERIOD_D1, 50,PRICE_CLOSE, MODE_MAIN,shift);
+   adxMain = iADX(NULL, LoFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
       
-   //----
-      adxplsH1= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_PLUSDI, shift );
-   adxminusH1= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
-   adxMinH4 = iADX(NULL, PERIOD_D1, 50,PRICE_CLOSE, MODE_MAIN,shift);
-   
    adxplsM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
    adxminusM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
    
-   adxplsM15= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
-   adxminusM15= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
-   adxMin = iADX(NULL, PERIOD_H1, 14,PRICE_CLOSE, MODE_MAIN,shift);
-   
-   adxplsH11= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
-   adxminusH11= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
-   
-   adxplsM151= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_PLUSDI, shift+1);
-   adxminusM151= iADX(NULL, PERIOD_H1, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
-   
-   trade_sar  = iSAR(Symbol(), PERIOD_M15, TradeStep, TradeMax, shift);
-   trade_sar1 = iSAR(Symbol(), PERIOD_M15, TradeStep, TradeMax, shift+1);
-   stop_sar   = iSAR(Symbol(), PERIOD_M15, StopStep, StopMax, shift);
+   //---- Sar 
+   trade_sar  = iSAR(Symbol(), HiFrame, TradeStep, TradeMax, shift);
+   trade_sar1 = iSAR(Symbol(), HiFrame, TradeStep, TradeMax, shift+1);
+   stop_sar   = iSAR(Symbol(), HiFrame, StopStep, StopMax, shift);
    // Bars
-   CLOSE  = iClose(Symbol(),PERIOD_M15, shift);
-   CLOSE1 = iClose(Symbol(),PERIOD_M15, shift+1);
-   HIGH   = iHigh(Symbol(), PERIOD_M15, shift);
-   LOW    = iLow(Symbol(), PERIOD_M15, shift);
+   CLOSE  = iClose(Symbol(),HiFrame, shift);
+   CLOSE1 = iClose(Symbol(),HiFrame, shift+1);
+   HIGH   = iHigh(Symbol(), HiFrame, shift);
+   LOW    = iLow(Symbol(), HiFrame, shift);
    
    BarH = IsBarClosed(PERIOD_H4,0) ;
    BarM = IsBarClosed(PERIOD_H1,1);
@@ -273,23 +291,32 @@ void Total_orders(bool P = true)
 //+------------------------------------------------------------------+
 int order_check()
 {  
-  //Print("NowDIPlus="+adxplsM15+" NowDIMinus="+adxminusM15+" PrevDIPlus="+adxplsM151+" PrevDIMinus="+adxminusM151);
-                           
-   buy_condition_H = adxplsH1  > adxminusH1;
-   buy_condition_M = adxplsM15 > adxminusM15;
-   intersect_M_to_Buy =  ((adxplsM151 < adxminusM151) && (adxplsM15 > adxminusM15));
-  
-   sell_condition_H = (adxplsH1  < adxminusH1);
-   sell_condition_M = (adxminusM15 > adxplsM15 );
-   intersect_M_to_Sell =  ((adxplsM151 > adxminusM151) && (adxplsM15 < adxminusM15));
-   
-   intersect_H_to_Buy = ((adxplsH11 < adxminusH11) && (adxplsH1 > adxminusH1));
-   intersect_H_to_Sell = ((adxplsH11 > adxminusH11) && (adxplsH1 < adxminusH1));
-   
+  //Print("NowDIPlus="+adxPlsLo+" NowDIMinus="+adxMinusLo+" PrevDIPlus="+adxPlsLo1+" PrevDIMinus="+adxMinusLo1);
+   // Lo Frame                        
+   buy_condition_M = adxPlsLo > adxMinusLo;
+   sell_condition_M = (adxMinusLo > adxPlsLo );
+   intersect_M_to_Buy =  ((adxPlsLo1 < adxMinusLo1) && (adxPlsLo > adxMinusLo));
+   intersect_M_to_Sell =  ((adxPlsLo1 > adxMinusLo1) && (adxPlsLo < adxMinusLo));
+   // Hi Frame
+   sell_condition_H = (adxPlsHi  < adxMinusHi);
+   buy_condition_H = adxPlsHi  > adxMinusHi;
+   intersect_H_to_Buy = ((adxPlsHi1 < adxMinusHi1) && (adxPlsHi > adxMinusHi));
+   intersect_H_to_Sell = ((adxPlsHi1 > adxMinusHi1) && (adxPlsHi < adxMinusHi));
+   // H1 Frame
+   sell_condition_H1 = (adxPlsH1  < adxMinusH1);
+   buy_condition_H1 = adxPlsH1  > adxMinusH1;
+   // H4 Frame
+   sell_condition_H4 = (adxPlsH4  < adxMinusH4);
+   buy_condition_H4 = adxPlsH4  > adxMinusH4;
+
+   // Hi Frame
+   sell_condition_H = (adxPlsHi  < adxMinusHi);
+   buy_condition_H = adxPlsHi  > adxMinusHi;
+
    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
-   //if(adxMin < 15 || adxMinH4 < 10 )
+   //if(adxMain < 15 || adxMainH4 < 10 )
    //   return 0;
 
    string alert = ("Status : \n BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +  "\n" + 
@@ -300,7 +327,7 @@ int order_check()
    if(BarH){
       SendNotification("Hour Change" + alert);
       // Change on H
-      if(intersect_H_to_Buy && (Buy_signal || disableSar ) ){
+      if(intersect_H_to_Buy && (Buy_signal || disableSar )){
          if (_Sell > 0 ){
             Reason = "#Reason# H2Buy & _Sell";
             Action = "#Action# Buy Double ";
@@ -316,7 +343,7 @@ int order_check()
             return (0);
             }
          }
-      if(intersect_H_to_Sell && (Sell_signal || disableSar ) ){
+      if(intersect_H_to_Sell && (Sell_signal || disableSar )){
          if (_Buy > 0 ){
             Reason = "#Reason# H2Sell & _Buy";
             Action = "#Action# Sell Double ";
@@ -663,43 +690,42 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
 //| Close Profit function                                                   |
 //+------------------------------------------------------------------+    
  void _Close_Profit(int direction, double prof){
-   double price = Ask;
-   if(direction == OP_SELL)
-       price = Ask;
-    else if(direction == OP_BUY)
-       price = Bid;
-   bool res = true;
-   
-   comment = " " + Reason + " " + Action;
-   string c;
-   double prft = prof;
+  double price = Ask;
+  if(direction == OP_SELL)
+    price = Ask;
+  else if(direction == OP_BUY)
+    price = Bid;
+  bool res = true;
+  
+  comment = " " + Reason + " " + Action;
+  string c;
+  double prft = prof;
    // TP of all 
-      for(int i=0;i<OrdersTotal();i++)
-         {
-            if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
-            if (prft == 0.0) continue;
-            if((OrderSymbol()==Symbol()) && (OrderType()==direction) &&(OrderMagicNumber()==MagicNumber) ){
-            double diff =  prft + OrderProfit() - (RealPoint * MarketInfo(Symbol(),MODE_SPREAD));
-               if(diff > 0.0){
-                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
-                  c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
-                  if(res){
-                     prft = diff;
-                     }
-               
-               if(!res){
-                  Print("Error in _Close Profit. Error code=",ErrorDescription(GetLastError()) , comment ,c);
-                  comment_trade = "Error in _Close Profit. Error code="+ErrorDescription(GetLastError()) + comment +c ;
-                  print(true);
-               }else{
-                  Print("Order _Close Profit successfully." + comment + c);
-                  comment_trade = "Order _Close Profit successfully." + comment+ c ;
-                  print(true);
-                }
-              }
-            }
-         }
+  for(int i=0;i<OrdersTotal();i++)
+    {
+    if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
+    if (prft == 0.0) continue;
+    if((OrderSymbol()==Symbol()) && (OrderType()==direction) &&(OrderMagicNumber()==MagicNumber) ){
+    double diff =  prft + OrderProfit() - (RealPoint * MarketInfo(Symbol(),MODE_SPREAD));
+       if(diff > 0.0){
+          res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
+          c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
+          if(res){
+             prft = diff;
+             }
+       if(!res){
+          Print("Error in _Close Profit. Error code=",ErrorDescription(GetLastError()) , comment ,c);
+          comment_trade = "Error in _Close Profit. Error code="+ErrorDescription(GetLastError()) + comment +c ;
+          print(true);
+       }else{
+          Print("Order _Close Profit successfully." + comment + c);
+          comment_trade = "Order _Close Profit successfully." + comment+ c ;
+          print(true);
+        }
+      }
+    }
   }
+}
 //+------------------------------------------------------------------+
 //| Update Orders function                                           |
 //+------------------------------------------------------------------+    
