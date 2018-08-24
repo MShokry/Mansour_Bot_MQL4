@@ -412,14 +412,20 @@ void Total_orders(bool P = true)
 void print(bool trade = false){
       Total_orders();
       if(!trade){
-      Comment("Status : \n BH  ", buy_condition_H ," SH  ", sell_condition_H  , "\n" ,
-      " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,"\n" ,
-      " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , "\n" ,
-      " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, "\n" ,
-      " SLt ", _SLots,                          " BLt ",_BLots, "\n" ,
-      " Pft ", _SProfit,                        " pft ",_BProfit, "\n" ,
-      " Ttl ", profit
-       );
+      string s = "Status : \n BH  "+ (string) buy_condition_H +" SH  "+  (string) sell_condition_H  + "\n" +
+      " H2B "+ (string) intersect_H_to_Buy+              " H2S "+ (string) intersect_H_to_Sell +"\n" +
+      " BM  "+(string) buy_condition_M +                 " SM  "+ (string) sell_condition_M + "\n" +
+      " M2B "+ (string) intersect_M_to_Buy+              " M2S "+ (string) intersect_M_to_Sell+ "\n" +
+      " SLt "+ (string) _SLots+                          " BLt "+ (string) _BLots+ "\n" +
+      " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
+      " Ttl "+ (string) profit ;
+      //Comment(s);
+      ObjectCreate("S1", OBJ_LABEL, 0, 0, 0, 0);
+      // Set pixel co-ordinates from top left corner (use OBJPROP_CORNER to set a different corner)
+      ObjectSet("S1", OBJPROP_XDISTANCE, 0);
+      ObjectSet("S1", OBJPROP_YDISTANCE, 50);
+      // Set text, font, and colour for object
+      ObjectSetText("S1", s, 10, "Arial", Red);
 
       Print("Status : BH  ", buy_condition_H ," SH  ", sell_condition_H  ,
       " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,
