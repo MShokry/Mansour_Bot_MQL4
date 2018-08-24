@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.57"
+#property version   "2.58"
 #property strict
 
 
@@ -24,6 +24,7 @@ To do
 // External variables
 extern string PS_Ex0                   = ">> Lot Size TP SL";
 extern double LotSize                  = 0.01;
+extern double DoubleFactor             = 2;
 extern double StopLoss                 = 0;
 extern double TakeProfit               = 50;
 extern double Max_Spread               = 35;
@@ -460,10 +461,8 @@ void print(bool trade = false){
    double _LotSize = 0.0;
    if(Max_Lots > 0.0)
       _LotSize = Max_Lots;
-   else if(_SLots == _BLots)
-      _LotSize = _SLots;
-   else if (_SLots > _BLots)
-      _LotSize = 2 * (_SLots - _BLots);
+   else if (_SLots >= _BLots)
+      _LotSize = (DoubleFactor * _SLots) - _BLots;
    else if (_BLots > _SLots )
       _LotSize = LotSize;
    
@@ -539,10 +538,8 @@ void print(bool trade = false){
    double _LotSize = 0.0;
    if(Max_Lots > 0.0)
       _LotSize = Max_Lots;
-   else if(_BLots == _SLots)
-    _LotSize = _BLots;
-   else if (_BLots > _SLots )
-     _LotSize = 2 * ( _BLots - _SLots);
+   else if (_BLots >= _SLots )
+     _LotSize = (DoubleFactor *  _BLots) - _SLots;
    else if (_SLots > _BLots)
      _LotSize = LotSize;
    
