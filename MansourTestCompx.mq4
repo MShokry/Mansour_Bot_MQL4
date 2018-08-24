@@ -288,7 +288,7 @@ int order_check()
          if (_Sell > 0 ){
             Reason = "#Reason# H12Buy & _Sell";
             Action = "#Action# Close SEll ";
-            _Close(OP_SELL);
+            _Close(OP_SELL,0);
             _Update(OP_BUY);
             print();
             return (0);
@@ -298,7 +298,7 @@ int order_check()
          if (_Buy > 0 ){
             Reason = "#Reason# H12Sell & _Buy";
             Action = "#Action# Close Buy  ";
-            _Close(OP_BUY);
+            _Close(OP_BUY,0);
             _Update(OP_SELL);
             print();
             return (0);
@@ -309,12 +309,12 @@ int order_check()
    if(!BarH) return (0);
    // Change on M and Hour is reversed
    // May be Close all 
-   if( buy_condition_H && buy_condition_H1 && buy_condition_H4 && (_Sell == 0) ){
+   if( intersect_H_to_Buy && buy_condition_H1 && buy_condition_H4 ){
      Reason = "#Reason BH & M2B & !_Sell";
      Action = "#Action# Buy "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
      Buy_normal (LotSize,TakeProfit);            
     }
-  else if( sell_condition_H && sell_condition_H1 && sell_condition_H4  && (_Buy == 0)  ){
+  else if( intersect_H_to_Sell && sell_condition_H1 && sell_condition_H4){
      Reason = "#Reason SH & M2S & !_Buy";
      Action = "#Action# Sell "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
      Sell_normal(LotSize,TakeProfit);
@@ -344,8 +344,8 @@ double RealPipPoint(string Currency)
 //+------------------------------------------------------------------+
 void OnTimer()
   {
-//---
-   ordered = false;
+  //---
+  ordered = false;
   }
 
 //+------------------------------------------------------------------+
@@ -403,14 +403,38 @@ void Total_orders(bool P = true)
 void print(bool trade = false){
       Total_orders();
       if(!trade){
-      Comment("Status : \n BH  ", buy_condition_H ," SH  ", sell_condition_H  , "\n" ,
-      " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,"\n" ,
-      " BM  ",buy_condition_M ,                 " SM  ",sell_condition_M , "\n" ,
-      " M2B ", intersect_M_to_Buy,              " M2S ",intersect_M_to_Sell, "\n" ,
-      " SLt ", _SLots,                          " BLt ",_BLots, "\n" ,
-      " Pft ", _SProfit,                        " pft ",_BProfit, "\n" ,
-      " Ttl ", profit
-       );
+      string s1 = "Status : \n BH  "+ (string) buy_condition_H +" SH  "+  (string) sell_condition_H  + "\n" +
+      " H2B "+ (string) intersect_H_to_Buy+              " H2S "+ (string) intersect_H_to_Sell +"\n" +
+      " BM  "+(string) buy_condition_M +                 " SM  "+ (string) sell_condition_M + "\n" +
+      " M2B "+ (string) intersect_M_to_Buy+              " M2S "+ (string) intersect_M_to_Sell+ "\n" +
+      " BH1 "+(string) buy_condition_H1 +                " SH1 "+ (string) sell_condition_H1 + "\n" +
+      " BH4 "+(string) buy_condition_H4 +                " SH4 "+ (string) sell_condition_H4 + "\n" +
+      " SLt "+ (string) _SLots+                          " BLt "+ (string) _BLots+ "\n" +
+      " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
+      " Ttl "+ (string) profit ;
+
+      Comment(s1);
+
+      string s = "Status : \n Minute  ";
+      if(buy_condition_M) { s+= "⇑"; } else { s+="⇓" ; }
+      if(buy_condition_H) { s+= " High[i] ⇑"; } else { s+=" High[i] ⇓" ; }
+      if(buy_condition_H1) { s+= " Hour ⇑"; } else { s+=" Hour ⇓" ; }
+      if(buy_condition_H4) { s+= " Hour4 ⇑"; } else { s+=" Hour4 ⇓" ; }
+      if(intersect_M_to_Buy) { s+= "\n Minute to ⇗"; } else if (intersect_M_to_Sell) {  s+= "\n Minute to  ⇘"; } else {  s+= "\n Minute to ⇝"; }
+      if(intersect_H_to_Buy) { s+= "\n Hi to ⇗"; } else if (intersect_H_to_Sell) {  s+= "\n Hi to  ⇘"; } else {  s+= "\n Hi to ⇝"; }
+      if(intersect_H1_to_Buy) { s+= "\n H1 to ⇗"; } else if (intersect_H1_to_Sell) {  s+= "\n H1 to  ⇘"; } else {  s+= "\n H1 to ⇝"; }
+      if(intersect_H4_to_Buy) { s+= "\n H4 to ⇗"; } else if (intersect_H4_to_Sell) {  s+= "\n H4 to  ⇘"; } else {  s+= "\n H4 to ⇝"; }
+      s +="\n SLt "+ (string) _SLots+                          " BLt "+ (string) _BLots+ "\n" +
+      " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
+      " Ttl "+ (string) profit ;
+
+      
+      ObjectCreate("S1", OBJ_LABEL, 0, 0, 0, 0);
+      // Set pixel co-ordinates from top left corner (use OBJPROP_CORNER to set a different corner)
+      ObjectSet("S1", OBJPROP_XDISTANCE, 0);
+      ObjectSet("S1", OBJPROP_YDISTANCE, 10);
+      // Set text, font, and colour for object
+      ObjectSetText("S1", s, 10, "Arial", Red);
 
       Print("Status : BH  ", buy_condition_H ," SH  ", sell_condition_H  ,
       " H2B ", intersect_H_to_Buy,              " H2S ",intersect_H_to_Sell ,
@@ -419,8 +443,7 @@ void print(bool trade = false){
       " SLt ", _SLots,                          " BLt ",_BLots,
       " Pft ", _SProfit,                        " pft ",_BProfit, 
       " Ttl ", profit
-          ); 
-          
+          );      
      }
      string str = ("Status : BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +
       " H2B "+ (string)  intersect_H_to_Buy+" H2S "+ (string) intersect_H_to_Sell +
