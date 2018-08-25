@@ -47,9 +47,9 @@ input bool Close_Profit                = true;
 input double Min_close_lot             = 0.0;
 input double Max_close_lot             = 100.0;
 input string PS_Ex6                    = ">> Close Rev HiFrame change ";
-input bool Close_Reverse_Hi               = true;
-input double Min_reverse_Hi_lot           = 0.0;
-input double Max_reverse_Hi_lot           = 100.0; 
+input bool Close_Reverse_Hi            = true;
+input double Min_reverse_Hi_lot        = 0.0;
+input double Max_reverse_Hi_lot        = 100.0; 
 input string PS_Ex7                    = ">> File ";
 input string InpFileName               ="Mansour";       // File name
 input string InpDirectoryName          ="Data";     // Folder name
@@ -188,20 +188,20 @@ int start()
    adxMinusH41= iADX(NULL, PERIOD_H4, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
    //---- Main Filter  
    adxMainH4 = iADX(NULL, PERIOD_D1, 50,PRICE_CLOSE, MODE_MAIN,shift);
-   adxMain = iADX(NULL, LoFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
+   adxMain = iADX(NULL, HiFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
       
    adxplsM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
    adxminusM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
    
    //---- Sar 
-   trade_sar  = iSAR(Symbol(), HiFrame, TradeStep, TradeMax, shift);
-   trade_sar1 = iSAR(Symbol(), HiFrame, TradeStep, TradeMax, shift+1);
-   stop_sar   = iSAR(Symbol(), HiFrame, StopStep, StopMax, shift);
+   trade_sar  = iSAR(Symbol(), PERIOD_H4, TradeStep, TradeMax, shift);
+   trade_sar1 = iSAR(Symbol(), PERIOD_H4, TradeStep, TradeMax, shift+1);
+   stop_sar   = iSAR(Symbol(), PERIOD_H4, StopStep, StopMax, shift);
    // Bars
-   CLOSE  = iClose(Symbol(),HiFrame, shift);
-   CLOSE1 = iClose(Symbol(),HiFrame, shift+1);
-   HIGH   = iHigh(Symbol(), HiFrame, shift);
-   LOW    = iLow(Symbol(), HiFrame, shift);
+   CLOSE  = iClose(Symbol(),PERIOD_H4, shift);
+   CLOSE1 = iClose(Symbol(),PERIOD_H4, shift+1);
+   HIGH   = iHigh(Symbol(), PERIOD_H4, shift);
+   LOW    = iLow(Symbol(), PERIOD_H4, shift);
    
    BarM = IsBarClosed(LoFrame,0);
    BarH = IsBarClosed(HiFrame,1) ;
@@ -226,7 +226,7 @@ int start()
 }
 
 //+------------------------------------------------------------------+
-//| Order Process                                                   |
+//| Order Process and coditions                                      |
 //+------------------------------------------------------------------+
 int order_check()
 {  
@@ -255,8 +255,8 @@ int order_check()
    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
-   //if(adxMain < 15 || adxMainH4 < 10 )
-   //   return 0;
+   if(adxMain < 20 ) //|| adxMainH4 < 10
+      return 0;
 
    string alert = ("Status : \n BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +  "\n" + 
       " H2B "+ (string)  intersect_H_to_Buy+" H2S "+ (string) intersect_H_to_Sell + "\n" + 
@@ -306,20 +306,42 @@ int order_check()
          }   
     }
 
-   if(!BarH) return (0);
+   if(!BarM) return (0);
    // Change on M and Hour is reversed
    // May be Close all 
-   if( intersect_H_to_Buy && buy_condition_H1 && buy_condition_H4 ){
-     Reason = "#Reason BH & M2B & !_Sell";
-     Action = "#Action# Buy "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
-     Buy_normal (LotSize,TakeProfit);            
+   if((_SLots + _BLots ) > 0.2 ){
+      if( intersect_H_to_Buy && buy_condition_H1 && buy_condition_H4 ){
+         Reason = "#Reason BH & M2B & !_Sell";
+         Action = "#Action# Buy "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
+         Buy_normal (LotSize,TakeProfit);    
+         _Update(OP_BUY);        
+        }
+      else if( intersect_H_to_Sell && sell_condition_H1 && sell_condition_H4){
+         Reason = "#Reason SH & M2S & !_Buy";
+         Action = "#Action# Sell "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
+         Sell_normal(LotSize,TakeProfit);
+         _Update(OP_SELL);
+        }else{ // Close As much as you can
+          if(intersect_H_to_Sell){
+
+          }else if(intersect_H_to_Buy){
+
+          }
+        }
+    } else {
+       if( intersect_M_to_Buy && buy_condition_H1 && buy_condition_H4 ){
+         Reason = "#Reason BH & M2B & !_Sell";
+         Action = "#Action# Buy "+ (string) LotSize +" Lot; Tp "+ (string) TakeProfit;
+         Buy_normal (LotSize,TakeProfit);    
+         _Update(OP_BUY);        
+        }
+      else if( intersect_M_to_Sell && sell_condition_H1 && sell_condition_H4){
+         Reason = "#Reason SH & M2S & !_Buy";
+         Action = "#Action# Sell "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
+         Sell_normal(LotSize,TakeProfit);
+         _Update(OP_SELL);
+        }
     }
-  else if( intersect_H_to_Sell && sell_condition_H1 && sell_condition_H4){
-     Reason = "#Reason SH & M2S & !_Buy";
-     Action = "#Action# Sell "+ (string)  LotSize +" Lot; Tp " + (string)  TakeProfit;
-     Sell_normal(LotSize,TakeProfit);
-    }
-    
   if(BarM){
          print();
       }     
@@ -409,6 +431,7 @@ void print(bool trade = false){
       " M2B "+ (string) intersect_M_to_Buy+              " M2S "+ (string) intersect_M_to_Sell+ "\n" +
       " BH1 "+(string) buy_condition_H1 +                " SH1 "+ (string) sell_condition_H1 + "\n" +
       " BH4 "+(string) buy_condition_H4 +                " SH4 "+ (string) sell_condition_H4 + "\n" +
+      " Adx "+(string) adxMain + "\n"+
       " SLt "+ (string) _SLots+                          " BLt "+ (string) _BLots+ "\n" +
       " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
       " Ttl "+ (string) profit ;
@@ -417,7 +440,7 @@ void print(bool trade = false){
 
       string s = "Status : \n Minute  ";
       if(buy_condition_M) { s+= "⇑"; } else { s+="⇓" ; }
-      if(buy_condition_H) { s+= " High[i] ⇑"; } else { s+=" High[i] ⇓" ; }
+      if(buy_condition_H) { s+= " High ⇑"; } else { s+=" High ⇓" ; }
       if(buy_condition_H1) { s+= " Hour ⇑"; } else { s+=" Hour ⇓" ; }
       if(buy_condition_H4) { s+= " Hour4 ⇑"; } else { s+=" Hour4 ⇓" ; }
       if(intersect_M_to_Buy) { s+= "\n Minute to ⇗"; } else if (intersect_M_to_Sell) {  s+= "\n Minute to  ⇘"; } else {  s+= "\n Minute to ⇝"; }
