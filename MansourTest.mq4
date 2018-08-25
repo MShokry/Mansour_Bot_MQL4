@@ -47,9 +47,9 @@ input bool Close_Profit                = true;
 input double Min_close_lot             = 0.0;
 input double Max_close_lot             = 100.0;
 input string PS_Ex6                    = ">> Close Rev HiFrame change ";
-input bool Close_Reverse_Hi               = true;
-input double Min_reverse_Hi_lot           = 0.0;
-input double Max_reverse_Hi_lot           = 100.0; 
+input bool Close_Reverse_Hi            = true;
+input double Min_reverse_Hi_lot        = 0.0;
+input double Max_reverse_Hi_lot        = 100.0; 
 input string PS_Ex7                    = ">> File ";
 input string InpFileName               ="Mansour";       // File name
 input string InpDirectoryName          ="Data";     // Folder name
@@ -177,7 +177,7 @@ int start()
    adxMinusHi1= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
    //---- Main Filter  
    adxMainH4 = iADX(NULL, PERIOD_D1, 50,PRICE_CLOSE, MODE_MAIN,shift);
-   adxMain = iADX(NULL, LoFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
+   adxMain = iADX(NULL, HiFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
       
    adxplsM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
    adxminusM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
@@ -237,8 +237,8 @@ int order_check()
    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
-   //if(adxMain < 15 || adxMainH4 < 10 )
-   //   return 0;
+   if(adxMain < 20 ) //|| adxMainH4 < 10
+      return 0;
 
    string alert = ("Status : \n BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +  "\n" + 
       " H2B "+ (string)  intersect_H_to_Buy+" H2S "+ (string) intersect_H_to_Sell + "\n" + 
@@ -420,7 +420,7 @@ void print(bool trade = false){
       " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
       " Ttl "+ (string) profit ;
       //Comment(s);
-      ObjectCreate("S1", OBJ_LABEL, 0, 0, 0, 0);
+      ObjectCreate("S1", OBJ_TEXT, 0, 0, 0, 0);
       // Set pixel co-ordinates from top left corner (use OBJPROP_CORNER to set a different corner)
       ObjectSet("S1", OBJPROP_XDISTANCE, 0);
       ObjectSet("S1", OBJPROP_YDISTANCE, 50);
@@ -434,7 +434,7 @@ void print(bool trade = false){
       " SLt ", _SLots,                          " BLt ",_BLots,
       " Pft ", _SProfit,                        " pft ",_BProfit, 
       " Ttl ", profit
-          ); 
+      ); 
           
      }
      string str = ("Status : BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +
