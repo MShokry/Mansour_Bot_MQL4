@@ -11,9 +11,13 @@
 
 /********************************************************************
 To do
-// Rety if failure
-// Normalize All prices
-// REduce Acumalited Loss
+- [ ] Rety if failure
+- [ ] Normalize All prices
+- [ ] REduce Acumalited Loss
+- [ ] Create Zones Top price buttom price and /3 zones 
+buy sell stop and use this zones to stop un maneged orders
+- [ ] Closing with Profit - [ ] Errors 
+- [ ] File Open ; Cannot read
 **********************************************************************/
 
 //---- Dependencies
@@ -26,7 +30,9 @@ extern string PS_Ex0                   = ">> Lot Size TP SL";
 extern double LotSize                  = 0.01;
 extern double DoubleFactor             = 2;
 extern double StopLoss                 = 0;
-extern double TakeProfit               = 50;
+extern int    adxMainLimit             = 20;
+extern double TakeProfit               = 500;
+extern double TakeProfitZero           = 100;
 extern double Max_Spread               = 35;
 extern string PS_Ex1                   = ">> Timing and Graph";
 extern int shift                       = 1;
@@ -38,23 +44,23 @@ extern double TradeMax                 = 0.2;
 extern string PS_Ex3                   = ">> Exit strategy";
 extern double StopStep                 = 0.004;
 extern double StopMax                  = 0.4;    
-input string PS_Ex4                    = ">> Close diff When Small frame change ";
-input bool Close_Reverse               = true;
-input double Min_reverse_lot           = 0.0;
-input double Max_reverse_lot           = 100.0;          
-input string PS_Ex5                    = ">> Sum Profit and Close other ";
-input bool Close_Profit                = true;
-input double Min_close_lot             = 0.0;
-input double Max_close_lot             = 100.0;
-input string PS_Ex6                    = ">> Close Rev HiFrame change ";
-input bool Close_Reverse_Hi            = true;
-input double Min_reverse_Hi_lot        = 0.0;
-input double Max_reverse_Hi_lot        = 100.0; 
-input string PS_Ex7                    = ">> File ";
-input string InpFileName               ="Mansour";       // File name
-input string InpDirectoryName          ="Data";     // Folder name
-input bool Log_all                     = true;
-input bool Log_trades                  = true;
+extern string PS_Ex4                    = ">> Close diff When Small frame change ";
+extern bool Close_Reverse               = true;
+extern double Min_reverse_lot           = 0.0;
+extern double Max_reverse_lot           = 100.0;          
+extern string PS_Ex5                    = ">> Sum Profit and Close other ";
+extern bool Close_Profit                = true;
+extern double Min_close_lot             = 0.0;
+extern double Max_close_lot             = 100.0;
+extern string PS_Ex6                    = ">> Close Rev HiFrame change ";
+extern bool Close_Reverse_Hi            = true;
+extern double Min_reverse_Hi_lot        = 0.0;
+extern double Max_reverse_Hi_lot        = 100.0; 
+extern string PS_Ex7                    = ">> File ";
+extern string InpFileName               ="Mansour";       // File name
+extern string InpDirectoryName          ="Data";     // Folder name
+extern bool Log_all                     = true;
+extern bool Log_trades                  = true;
 
 
 // Global variables
@@ -126,6 +132,7 @@ int _CountOrd, _Buy, _Sell;
 double _SLots,_BLots;
 double _SProfit, _BProfit;
 double profit;
+bool _q;
 // Timing
 bool BarM,BarH;
 bool Max_Spread_Reached;
@@ -177,7 +184,7 @@ int start()
    adxMinusHi1= iADX(NULL, HiFrame, 14 , PRICE_CLOSE, MODE_MINUSDI, shift+1);
    //---- Main Filter  
    adxMainH4 = iADX(NULL, PERIOD_D1, 50,PRICE_CLOSE, MODE_MAIN,shift);
-   adxMain = iADX(NULL, HiFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
+   adxMain = iADX(NULL, LoFrame, 14,PRICE_CLOSE, MODE_MAIN,shift);
       
    adxplsM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_PLUSDI, shift);
    adxminusM30= iADX(NULL, PERIOD_M30, 14 , PRICE_CLOSE, MODE_MINUSDI, shift);
@@ -202,7 +209,7 @@ int start()
    Total_orders(false);
    if( profit > 1.0 && _SLots > 0.0 && _BLots > 0.0 ){ //@ Break Even
       Print("### Close All ####");
-      _Close_all();
+      //_Close_all();
       Total_orders();
       }
         
@@ -237,7 +244,7 @@ int order_check()
    Sell_signal = trade_sar > CLOSE && stop_sar > CLOSE;
    Buy_signal = trade_sar < CLOSE && stop_sar < CLOSE;
    
-   if(adxMain < 20 ) //|| adxMainH4 < 10
+   if(adxMain < adxMainLimit ) //|| adxMainH4 < 10
       return 0;
 
    string alert = ("Status : \n BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +  "\n" + 
@@ -378,6 +385,8 @@ void Total_orders(bool P = true)
    _SLots = 0.0; _BLots =0.0;
    profit = 0.0;
    _BProfit = 0.0; _SProfit = 0.0;
+   double max = 0;
+   double min = 1000;
    RefreshRates();
    for(int i=0;i<OrdersTotal();i++)
    {
@@ -385,18 +394,30 @@ void Total_orders(bool P = true)
       if(OrderSymbol()==Symbol()&&(OrderMagicNumber()==MagicNumber))
       {
          if(OrderType()==OP_BUY){
-         _CountOrd++;
-         _Buy++;
-         _BLots += OrderLots();
-         _BProfit += OrderProfit()+OrderCommission()+OrderSwap();
+            _CountOrd++;
+            _Buy++;
+            _BLots += OrderLots();
+            _BProfit += OrderProfit()+OrderCommission()+OrderSwap();
+            if(OrderOpenPrice() > max){
+               max = OrderOpenPrice();
+            }   
          }else if(OrderType()==OP_SELL){
-         _CountOrd++;
-         _Sell++;
-         _SLots += OrderLots();
-         _SProfit += OrderProfit()+OrderCommission()+OrderSwap();
+            _CountOrd++;
+            _Sell++;
+            _SLots += OrderLots();
+            _SProfit += OrderProfit()+OrderCommission()+OrderSwap();
+            if(OrderOpenPrice() < min){
+               min = OrderOpenPrice();
+            }
          }
          profit+=OrderProfit()+OrderCommission()+OrderSwap();
       }
+   }
+   if(max != 0 && min != 1000){
+    double sp = MarketInfo(Symbol(),MODE_SPREAD);
+    double dif = (max - min) / RealPoint;
+   } else {
+    _q = true;
    }
    if(P)
       Print("Total " + IntegerToString( _CountOrd) 
@@ -406,12 +427,13 @@ void Total_orders(bool P = true)
       );
 }
 //+------------------------------------------------------------------+
-//| Print                                                            |
+//| Print Function                                                   |
 //+------------------------------------------------------------------+ 
   
 void print(bool trade = false){
       Total_orders();
       if(!trade){
+
       string s = "Status : \n BH  "+ (string) buy_condition_H +" SH  "+  (string) sell_condition_H  + "\n" +
       " H2B "+ (string) intersect_H_to_Buy+              " H2S "+ (string) intersect_H_to_Sell +"\n" +
       " BM  "+(string) buy_condition_M +                 " SM  "+ (string) sell_condition_M + "\n" +
@@ -419,10 +441,10 @@ void print(bool trade = false){
       " SLt "+ (string) _SLots+                          " BLt "+ (string) _BLots+ "\n" +
       " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
       " Ttl "+ (string) profit ;
-      //Comment(s);
+      Comment(s);
       ObjectCreate("S1", OBJ_TEXT, 0, 0, 0, 0);
       // Set pixel co-ordinates from top left corner (use OBJPROP_CORNER to set a different corner)
-      ObjectSet("S1", OBJPROP_XDISTANCE, 0);
+      ObjectSet("S1", OBJPROP_XDISTANCE, 100);
       ObjectSet("S1", OBJPROP_YDISTANCE, 50);
       // Set text, font, and colour for object
       ObjectSetText("S1", s, 10, "Arial", Red);
@@ -445,11 +467,11 @@ void print(bool trade = false){
       " Pft "+ (string)   _SProfit + " pft " + (string)  _BProfit+
       " Ttl "+ (string)   profit 
       );
-      
+    string var1=TimeToStr(TimeCurrent(),TIME_DATE|TIME_SECONDS);
      if(Log_all) 
-      FileWriteString(file_handle,str + comment +"\r\n");
+      FileWriteString(file_handle,var1 + str + comment +"\r\n");
      if(Log_trades && trade)
-      FileWriteString(file_handle_trade,str + comment_trade +"\r\n");
+      FileWriteString(file_handle_trade,var1 + str + comment_trade +"\r\n");
 }
 //+------------------------------------------------------------------+
 //| Buy Double Condition                                             |
@@ -729,7 +751,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
 int _Update(int direction, bool clear = false){
    // Calculate Break even
    if(profit > 10){
-      _Close_all();
+      //_Close_all();
       return(0);
    }
    Total_orders(true);
@@ -737,7 +759,7 @@ int _Update(int direction, bool clear = false){
    double break_even = 0.0;
    if(_Sell > 0.0 && _Buy > 0.0 && (_SLots != _BLots)){
      break_even = MathAbs(RealPoint * profit / (_BLots - _SLots));
-     //break_even += (RealPoint * 15);
+     break_even += (RealPoint * TakeProfitZero);
    } else if((_Sell > 0.0 || _Buy > 0.0) &&(_SLots != _BLots)) { // Only Sell OR Buy
      break_even = RealPoint * TakeProfit;
    }else{ //Boot equal
