@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.58"
+#property version   "1.0"
 #property strict
 
 

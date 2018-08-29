@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Mohamed Mansour Beek."
 #property link      "https://www.DasStack.com"
-#property version   "2.58"
+#property version   "2.59"
 #property strict
 
 
@@ -38,22 +38,22 @@ extern string PS_Ex1                   = ">> Timing and Graph";
 extern int shift                       = 1;
 extern int MagicNumber                 = 224455;
 extern string PS_Ex2                   = ">> Entry strategy";
-extern bool disableSar                 = false;
+extern bool disableSar                 = true;
 extern double TradeStep                = 0.002;
 extern double TradeMax                 = 0.2;
 extern string PS_Ex3                   = ">> Exit strategy";
 extern double StopStep                 = 0.004;
 extern double StopMax                  = 0.4;    
 extern string PS_Ex4                    = ">> Close diff When Small frame change ";
-extern bool Close_Reverse               = true;
+extern bool Close_Reverse               = false;
 extern double Min_reverse_lot           = 0.0;
 extern double Max_reverse_lot           = 100.0;          
 extern string PS_Ex5                    = ">> Sum Profit and Close other ";
-extern bool Close_Profit                = true;
+extern bool Close_Profit                = false;
 extern double Min_close_lot             = 0.0;
 extern double Max_close_lot             = 100.0;
 extern string PS_Ex6                    = ">> Close Rev HiFrame change ";
-extern bool Close_Reverse_Hi            = true;
+extern bool Close_Reverse_Hi            = false;
 extern double Min_reverse_Hi_lot        = 0.0;
 extern double Max_reverse_Hi_lot        = 100.0; 
 extern string PS_Ex7                    = ">> File ";
@@ -416,6 +416,7 @@ void Total_orders(bool P = true)
    if(max != 0 && min != 1000){
     double sp = MarketInfo(Symbol(),MODE_SPREAD);
     double dif = (max - min) / RealPoint;
+    
    } else {
     _q = true;
    }
