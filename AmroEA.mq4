@@ -74,8 +74,8 @@ void OnTick()
   bool BarH = IsBarClosed(PERIOD_H1,0) ;
   /******************* AT Touch ******************************/
   RefreshRates();
-  LL[0] = HL[10];
-  HL[9] = LL[1];
+  LL[0] = HL[18];
+  HL[9] = LL[9];
   if (Signal == OP_SELL){
     for (int ii = 9;ii<19;ii++){
         if((Bid < HL[ii]) && Bid > HL[ii+1]){
@@ -90,27 +90,29 @@ void OnTick()
         }
     }
   }
+
   /******************* AT Touch ******************************/
   double open = iOpen(NULL,PERIOD_H1,0); //Curretn Open Price
   if (Signal == OP_BUY){
       if ((open > LL[1] ) && (Bid <= LL[1]) ){
         if (Signal == OP_BUY && (_Buy[0] < Max_Order &&  _Buy[1] < Max_Order)){         
              Print( "Place Order Buy" );
-             if (OrderSend( Symbol(), OP_BUY, LotSize, Ask, 5, 0 ,LL[2] , "Buy Order" , MagicNumber,0, clrBlue) == -1)
+             if (OrderSend( Symbol(), OP_BUY, LotSize, Ask, 5, 0 ,LL[2] , "Buy Touch @ " + (string) _sq , MagicNumber,0, clrBlue) == -1)
              {
-                 Print("Error order Buy "+(string)ErrorDescription(GetLastError()) ); 
+                Print("Error order Buy "+(string)ErrorDescription(GetLastError()) ); 
              }
+                print();   
             }
       }
     }else if (Signal == OP_SELL){
       if ((open < HL[10] ) && (Bid >= HL[10]) ){
-        if (Signal == OP_SELL && (_Sell[9] < Max_Order) && (_Sell[9] < Max_Order) ){
+        if (Signal == OP_SELL && (_Sell[9] < Max_Order) && (_Sell[10] < Max_Order) ){
                  Print( "Place Order Sell" );
-                 if (OrderSend( Symbol(), OP_SELL, LotSize, Bid, 5, 0, HL[11], "Sell Order", MagicNumber,0, clrBrown) == -1)
+                 if (OrderSend( Symbol(), OP_SELL, LotSize, Bid, 5, 0, HL[11], "Sell Touch @ " + (string) _sq, MagicNumber,0, clrBrown) == -1)
                 {
-                   Print("Error order Buy "+(string)ErrorDescription(GetLastError()) );
-                   //print();   
+                  Print("Error order Sell "+(string)ErrorDescription(GetLastError()) );
                 }
+                print();   
               }
       }
     }
@@ -118,7 +120,7 @@ void OnTick()
 
 
   /****************** Normal Close ****************************/
-  //Total_orders(BarH);
+  Total_orders(BarH);
   if(BarH){
   RefreshRates();
   print();
@@ -138,9 +140,9 @@ void OnTick()
              _sq = ii;
         if (Signal == OP_BUY && _Buy[ii] < Max_Order ){         
              Print( "Place Order Buy" );
-             if (OrderSend( Symbol(), OP_BUY, LotSize, Ask, 5, 0 ,LL[ii+1] , "Buy Order" , MagicNumber,0, clrBlue) == -1)
+             if (OrderSend( Symbol(), OP_BUY, LotSize, Ask, 5, 0 ,LL[ii+1] , "Buy Close @ " + (string) _sq , MagicNumber,0, clrBlue) == -1)
              {
-                 Print("Error order Buy "+(string)ErrorDescription(GetLastError()) );
+                 Print("Error order sell "+(string)ErrorDescription(GetLastError()) );
                  //print();   
              }
             }
@@ -154,7 +156,7 @@ void OnTick()
              _sq = ii;
              if (Signal == OP_SELL && _Sell[ii] < Max_Order){
                  Print( "Place Order Sell" );
-                 if (OrderSend( Symbol(), OP_SELL, LotSize, Bid, 5, 0, HL[ii+1], "Sell Order", MagicNumber,0, clrRed) == -1)
+                 if (OrderSend( Symbol(), OP_SELL, LotSize, Bid, 5, 0, HL[ii+1], "Sell Close @ "+ (string) _sq, MagicNumber,0, clrRed) == -1)
                 {
                    Print("Error order Buy "+(string)ErrorDescription(GetLastError()) );
                    //print();   
@@ -181,7 +183,6 @@ void OnTimer()
   
 void print(bool trade = false){
       Total_orders();
-      if(!trade){
       string s = "Status : \n  "+ 
       "SQ "  + (string) _sq +
       " SLt "+ (string) _Sell[_sq]+                          " BLt "+ (string) _Buy[_sq] + "\n" +
@@ -189,8 +190,6 @@ void print(bool trade = false){
       " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
       " Ttl "+ (string) profit ;
       Comment(s);          
-     }
-
 }
 //+------------------------------------------------------------------+
 //| Clock function                                                   |
@@ -214,14 +213,14 @@ double _SProfit, _BProfit;
 double profit;
 bool _q;
 
-void Total_orders(bool P = true)
+void Total_orders(bool P = false)
 {
    _CountOrd=0;
    for (int i =0;i<30 ;i++){
    _Buy[i]=0;_Sell[i]=0;
    }
-   LL[0] = HL[10];
-   HL[9] = LL[1];
+   LL[0] = HL[18];
+   HL[9] = LL[9];
    _SLots = 0.0; _BLots =0.0;
    profit = 0.0;
    _BProfit = 0.0; _SProfit = 0.0;
@@ -282,8 +281,7 @@ void Total_orders(bool P = true)
    for(int i=0;i<OrdersTotal();i++)
       {
          if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
-         if(OrderSymbol()==Symbol())
-            if(OrderType()== direction &&(OrderMagicNumber()==MagicNumber)){
+         if(OrderSymbol()==Symbol() && OrderType()== direction &&(OrderMagicNumber()==MagicNumber)){
                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
                  c = " Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit() +" Dir "+(string)  direction + " Lots " +(string)  OrderLots();
                  if(!res){
