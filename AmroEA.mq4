@@ -25,9 +25,9 @@ extern int    Max_Order                = 1;
 
 double RealPoint;
 /******************************************************
-- [ ] Take order when Touch screen (Box) 
-- [ ] One order / Square
-- [ ] Sl when Closed reverse => Then Take orders to make zero at next level
+- [x] Take order when Touch screen (Box) 
+- [x] One order / Square
+- [x] Sl when Closed reverse => [ ] Then Take orders to make zero at next level
 ***************************************************/
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -116,16 +116,15 @@ void OnTick()
               }
       }
     }
-
-
-
-  /****************** Normal Close ****************************/
   Total_orders(BarH);
+  /****************** Normal Close ****************************/
   if(BarH){
   RefreshRates();
   print();
   open = iOpen(NULL,PERIOD_H1,1);
   Amro();
+  _Update();
+  Total_orders(BarH);
   if(Bid > LL[1]){
       Signal = OP_BUY;
       _Close(OP_SELL);
@@ -162,7 +161,7 @@ void OnTick()
                    //print();   
                 }
               }
-        print();
+         print();
          break;
          }
     }
@@ -248,10 +247,10 @@ void Total_orders(bool P = false)
             for(int ii = 9 ; ii < 18; ii++){
               if ( (OrderOpenPrice() < HL[ii]) && (OrderOpenPrice() > HL[ii+1]) ){
               _Sell[ii]++;
+
               }
             }
          }
-        
          profit+=OrderProfit()+OrderCommission()+OrderSwap();
       }
    }
@@ -265,17 +264,16 @@ void Total_orders(bool P = false)
     }
 }
 
-
- //+------------------------------------------------------------------+
-//| Close Orders function                                                   |
-//+------------------------------------------------------------------+    
+//+-------------------------------------------------------------------+
+//| Close Orders function                                             |
+//+-------------------------------------------------------------------+    
  void _Close(int direction){
    double price = Ask;
    if(direction == OP_SELL)
        price = Ask;
     else if(direction == OP_BUY)
        price = Bid;
-   bool res = true;
+   res = true;
    string c;
    // TP of all 
    for(int i=0;i<OrdersTotal();i++)
@@ -295,3 +293,43 @@ void Total_orders(bool P = false)
             }
       } 
   }
+//+-------------------------------------------------------------------+
+//| Update  function                                                  |
+//+-------------------------------------------------------------------+  
+/*
+break_even = MathAbs(RealPoint * profit / (_BLots - _SLots));
+_BLots = (break_even * _SLots + RealPoint * profit)/break_even
+*/
+
+bool res;
+void _Update(){
+  RefreshRates();
+   for(int i=0;i<OrdersTotal();i++)
+   {
+      if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false) continue;
+      if(OrderSymbol()==Symbol()&&(OrderMagicNumber()==MagicNumber))
+      {
+         if(OrderType()==OP_BUY){
+            for(int ii = 0 ; ii < 10; ii++){
+              if ((OrderOpenPrice() > LL[ii] )&& (OrderOpenPrice() < LL[ii+1]) && OrderTakeProfit() != LL[ii+1] ){
+                  res=OrderModify(OrderTicket(),OrderOpenPrice(),0,LL[ii+1],0,Blue);
+                  if(!res)
+                     Print("Error in OrderModify OP_BUY . Error code=",ErrorDescription(GetLastError()));
+                  else
+                     Print("Order modified successfully. OP_BUY to LL " , ii+1);
+                }
+            }
+         }else if(OrderType()==OP_SELL){
+            for(int ii = 9 ; ii < 18; ii++){
+              if ( (OrderOpenPrice() < HL[ii]) && (OrderOpenPrice() > HL[ii+1]) && OrderTakeProfit() != HL[ii+1] ){
+                res=OrderModify(OrderTicket(),OrderOpenPrice(),0,HL[ii+1],0,Blue);
+                if(!res)
+                   Print("Error in OrderModify OP_SELL . Error code=",ErrorDescription(GetLastError()));
+                else
+                   Print("Order modified successfully. OP_SELL to HL " , ii+1);
+              }
+            }
+         }
+      }
+   }
+}
