@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Stocastic Round 1."
 #property link      "https://www.DasStack.com"
-#property version   "1.0"
+#property version   "1.1"
 #property strict
 
 /********************************************************************
@@ -78,7 +78,7 @@ extern color color1                    = Green;
 extern int width1                      = 1;
 extern int style1                      = 0;
 extern string PS_Ex9                   = ">> Init Signal 0 None 1 Buy 2 Sell";
-extern int initSignal                  = 0; //0 
+extern int initSignal                  = 0; //Initial Signal
 
 // Global variables
 int LongTicket;
@@ -159,27 +159,35 @@ int Order_Stoc = initSignal;
 int UpperThreshold=80;          //Upper Threshold, default 80
 int LowerThreShold=20;          //Lower Threshold, default 20
 int CenterThreShold=50;          //Lower Threshold, default 20
-double StochPrevMain,StochPrevSig,StochCurrMain,StochCurrSig;
+double StochPrevMain1,StochPrevSig1,StochPrevMain,StochPrevSig,StochCurrMain,StochCurrSig;
 double StochPrevMainM,StochPrevSigM,StochCurrMainM,StochCurrSigM;
 int order_check()
 {  
   //Print("NowDIPlus="+adxPlsLo+" NowDIMinus="+adxMinusLo+" PrevDIPlus="+adxPlsLo1+" PrevDIMinus="+adxMinusLo1);
    // Lo Frame                        
-   
+   /*
+	in sell case
+	Day frame : signal > main and touch 80 level
+	H4 frame: Signal > main above 50level
+	*/
    if(BarD){ 
+   RefreshRates();
+   StochPrevMain1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,2);
+   StochPrevSig1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,2);
    StochPrevMain=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,1);
    StochPrevSig=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,1);
    StochCurrMain=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,0);
    StochCurrSig=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,0);
-   // Comment(StochPrevMain," ",StochPrevSig," ",StochCurrMain," ",StochCurrSig);
-	   if(StochPrevMain>StochPrevSig && StochCurrMain<StochCurrSig  && (StochCurrMain>UpperThreshold || StochCurrSig>UpperThreshold)){
-	      Order_Stoc=SIGNAL_BUY;
-        Comment("Buy");
-        // Buy_normal (LotSize,TakeProfit); 
-	   }else if(StochPrevMain<StochPrevSig && StochCurrMain>StochCurrSig  && (StochCurrSig<LowerThreShold || StochCurrMain<LowerThreShold)){
+   Comment(StochPrevMain," ",StochPrevSig," ",StochCurrMain," ",StochCurrSig);
+   bool over = (StochCurrMain>UpperThreshold || StochCurrSig>UpperThreshold || StochPrevMain>UpperThreshold || StochPrevSig>UpperThreshold);
+   bool under = (StochCurrSig<LowerThreShold || StochCurrMain<LowerThreShold || StochPrevMain<LowerThreShold || StochPrevSig<LowerThreShold);
+   
+	   if( (StochPrevMain1>StochPrevSig1 || StochPrevMain>StochPrevSig) && StochCurrMain<StochCurrSig  && over ){
 	      Order_Stoc=SIGNAL_SELL;
         Comment("Sell");
-        // Sell_normal (LotSize,TakeProfit);
+	   }else if( (StochPrevMain<StochPrevSig || StochPrevMain1<StochPrevSig1) && StochCurrMain>StochCurrSig  && under ){
+	      Order_Stoc=SIGNAL_BUY;
+        Comment("Buy");
 	   }
    }
 
@@ -189,10 +197,10 @@ int order_check()
    StochCurrMainM=iStochastic(Symbol(),PERIOD_H4,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,0);
    StochCurrSigM=iStochastic(Symbol(),PERIOD_H4,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,0);
    // Comment("M",StochPrevMainM,StochPrevSigM,StochCurrMainM,StochCurrSigM);
-	   if(StochPrevMainM>StochPrevSigM && StochCurrMainM<StochCurrSigM  &&  (StochCurrMainM>CenterThreShold || StochCurrSigM>CenterThreShold) && Order_Stoc==SIGNAL_BUY){
-	      Buy_normal (LotSize,TakeProfit); 
-	   }else if(StochPrevMainM<StochPrevSigM && StochCurrMainM>StochCurrSigM  && (StochCurrMainM<CenterThreShold || StochCurrSigM<CenterThreShold)  && Order_Stoc==SIGNAL_SELL){
-	      Sell_normal (LotSize,TakeProfit);
+	   if(StochPrevMainM>StochPrevSigM && StochCurrMainM<StochCurrSigM  &&  (StochCurrMainM>CenterThreShold || StochCurrSigM>CenterThreShold) && Order_Stoc==SIGNAL_SELL){
+	      Sell_normal (LotSize,TakeProfit); 
+	   }else if(StochPrevMainM<StochPrevSigM && StochCurrMainM>StochCurrSigM  && (StochCurrMainM<CenterThreShold || StochCurrSigM<CenterThreShold)  && Order_Stoc==SIGNAL_BUY){
+	      Buy_normal (LotSize,TakeProfit);
 	   }
     // print(false);
 
