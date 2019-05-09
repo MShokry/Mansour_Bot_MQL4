@@ -17,14 +17,17 @@ double RealPipPoint(string Currency)
 void print(bool trade = false){
       Total_orders();
       if(!trade){
-      string s = "Status : \n   "+
+      string s = "Status# : \n   "+
       " SLt "+ (string) _SLots+                          " BLt "+ (string) _BLots+ "\n" +
       " SL "+ (string) _Sells+                          " BY "+ (string) _Buys+ "\n" +
       " Pft "+ (string) _SProfit+                        " pft "+ (string) _BProfit+ "\n" +
-       "SQ "  + (string) _sq + "\n" +
+      " SQ "  + (string) _sq + "\n" +
       " SLt "+ (string) _SLot[_sq]+                          " BLt "+ (string) _BLot[_sq] + "\n" +
       " SL "+ (string) _Sell[_sq]+                          " BY "+ (string) _Buy[_sq] + "\n" +
-      " Ttl "+ (string) profit ;
+      " Ttl "+ (string) profit  +
+      "\nH4 " + (string) Current_Hour_Stoc + "H4- " + (string) Hour_Stoc  + " D " + (string) Current_Day_Stoc + " D- " + (string) Day_Stoc
+      
+      ;
       Comment(s);
       ObjectCreate("S1", OBJ_TEXT, 0, 0, 0, 0);
       // Set pixel co-ordinates from top left corner (use OBJPROP_CORNER to set a different corner)
@@ -39,7 +42,9 @@ void print(bool trade = false){
       " SL "+ (string) _Sell[_sq]+                          " BY "+ (string) _Buy[_sq] + "\n" +
       " SLt ", _SLots,                          " BLt ",_BLots,
       " Pft ", _SProfit,                        " pft ",_BProfit, 
-      " Ttl ", profit
+      " Ttl ", profit +
+      "\nH4 " + (string) Current_Hour_Stoc + "H4- " + (string) Hour_Stoc  + " D " + (string) Current_Day_Stoc + " D- " + (string) Day_Stoc
+      
       );     
      }
      string str = ("Status : BH "+ (string)  buy_condition_H +" SH "+ (string)  sell_condition_H  +
