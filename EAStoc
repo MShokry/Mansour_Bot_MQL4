@@ -209,7 +209,10 @@ int Signal;
        "SQ "  + (string) _sq + "\n" +
       " SLt "+ (string) _SLot[_sq]+                          " BLt "+ (string) _BLot[_sq] + "\n" +
       " SL "+ (string) _Sell[_sq]+                          " BY "+ (string) _Buy[_sq] + "\n" +
-      " Ttl "+ (string) profit ;
+      " Ttl "+ (string) profit +
+      "\nH4 " + (string) Current_Hour_Stoc + "H4- " + (string) Hour_Stoc  + " D " + (string) Current_Day_Stoc + " D- " + (string) Day_Stoc
+      
+      ;
       Comment(s);
    if((profit >= TakeProfitDolar && (_SLots > LotSize || _BLots > LotSize))){ //@ Break Even
       Print("### Close All ####");
@@ -240,6 +243,7 @@ Day > 80 Signal over Main => sell
 int Day_Stoc = initSignal;
 int Current_Day_Stoc = SIGNAL_NONE ;
 int Hour_Stoc = SIGNAL_NONE;
+int Current_Hour_Stoc = SIGNAL_NONE;
 
 int UpperThreshold=80;          //Upper Threshold, default 80
 int LowerThreShold=20;          //Lower Threshold, default 20
@@ -270,12 +274,13 @@ int order_check()
 	     if( (StochPrevMain1>StochPrevSig1 || StochPrevMain>StochPrevSig) && StochCurrMain<StochCurrSig  && over ){
 	        Day_Stoc=SIGNAL_SELL;
 	        Current_Day_Stoc = SIGNAL_SELL;
-	        Comment("Sell");
+	        //Comment("Sell");
 	     }else if( (StochPrevMain<StochPrevSig || StochPrevMain1<StochPrevSig1) && StochCurrMain>StochCurrSig  && under ){
 	        Day_Stoc=SIGNAL_BUY;
 	        Current_Day_Stoc = SIGNAL_BUY;
-	        Comment("Buy");
-	     }else if (StochCurrMain<StochCurrSig  && over){
+	        //Comment("Buy");
+	     }
+	     if (StochCurrMain<StochCurrSig  && over){
 	     	Current_Day_Stoc = SIGNAL_SELL;
 	     }else if (StochCurrMain>StochCurrSig  && under){
 	     	Current_Day_Stoc = SIGNAL_BUY;
@@ -298,6 +303,16 @@ int order_check()
 		}else {
 			Hour_Stoc = SIGNAL_NONE;
 		}
+
+		if(StochCurrMainM<StochCurrSigM  &&  (StochCurrMainM>CenterThreShold || StochCurrSigM>CenterThreShold)){
+			Current_Hour_Stoc = SIGNAL_SELL;
+		}else if (StochCurrMainM>StochCurrSigM  && (StochCurrMainM<CenterThreShold || StochCurrSigM<CenterThreShold)) {
+			Current_Hour_Stoc = SIGNAL_BUY;
+		}else {
+			Current_Hour_Stoc = SIGNAL_NONE;
+		}
+
+
 		Total_orders(true);
    		Ordering ();
 
@@ -349,9 +364,9 @@ int order_check()
           Sell_normal (LotSize,TakeProfit);     
         if(_Buys>0)  
          _Update(OP_SELL,false);    
-      }else if( ((Hour_Stoc != SIGNAL_BUY) || (Current_Day_Stoc != SIGNAL_BUY)) && (Day_Stoc == SIGNAL_BUY)  ){ //Real buy now + ADX Buy
+      }else if( ((Current_Hour_Stoc != SIGNAL_BUY) || (Current_Day_Stoc != SIGNAL_BUY)) && (Day_Stoc == SIGNAL_BUY)  ){ //Real buy now + ADX Buy
         _Close(OP_BUY,0);                  
-      }else if( ((Hour_Stoc != SIGNAL_SELL) || (Current_Day_Stoc != SIGNAL_SELL)) && (Day_Stoc == SIGNAL_SELL) ){ // REal SEll now + BUY
+      }else if( ((Current_Hour_Stoc != SIGNAL_SELL) || (Current_Day_Stoc != SIGNAL_SELL)) && (Day_Stoc == SIGNAL_SELL) ){ // REal SEll now + BUY
         _Close(OP_SELL,0);       
         //_Update(OP_SELL,false);  
       }/*
