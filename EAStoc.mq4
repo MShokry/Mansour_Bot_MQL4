@@ -284,12 +284,12 @@ int order_check()
 	        ObjectCreate("Buy"+(string) Time[0], OBJ_VLINE, 0, Time[0],0);
 	        ObjectSet("Buy"+(string)Time[0], OBJPROP_COLOR, Blue);
 	        //Comment("Buy");
-	     }else if( (StochCurrMain<StochCurrSig) && Day_Stoc == SIGNAL_SELL ){
+	     }else if( (StochCurrMain>StochCurrSig) && Day_Stoc == SIGNAL_SELL ){
 	     	Day_Stoc=SIGNAL_NONE;
 	     	Day_change=1;
 	     	ObjectCreate("OUT"+(string) Time[0], OBJ_VLINE, 0, Time[0],0);
 	        ObjectSet("OUT"+(string)Time[0], OBJPROP_COLOR, Orange);
-	     }else if( (StochCurrMain>StochCurrSig)  && Day_Stoc == SIGNAL_BUY ){
+	     }else if( (StochCurrMain<StochCurrSig)  && Day_Stoc == SIGNAL_BUY ){
 	     	Day_Stoc=SIGNAL_NONE;
 	     	Day_change=1;
 	     	ObjectCreate("OUT"+(string) Time[0], OBJ_VLINE, 0, Time[0],0);
