@@ -271,7 +271,7 @@ int order_check()
 	   //Comment(StochPrevMain," ",StochPrevSig," ",StochCurrMain," ",StochCurrSig);
 	   bool over = (StochCurrMain>UpperThreshold || StochCurrSig>UpperThreshold || StochPrevMain>UpperThreshold || StochPrevSig>UpperThreshold);
 	   bool under = (StochCurrSig<LowerThreShold || StochCurrMain<LowerThreShold || StochPrevMain<LowerThreShold || StochPrevSig<LowerThreShold);
-	   
+	   Day_change=0;
 	     if( (StochPrevMain1>StochPrevSig1 || StochPrevMain>StochPrevSig) && StochCurrMain<StochCurrSig  && over ){
 	        Day_Stoc=SIGNAL_SELL;
 	        Current_Day_Stoc = SIGNAL_SELL;
@@ -351,11 +351,11 @@ int Day_change=0;int Closing = 0;
         if(_Buys>0) {
           _Update(OP_SELL,true);    
         }
-      }else if( ((Current_Day_Stoc != SIGNAL_BUY) || (Day_Stoc != SIGNAL_BUY)) && (_Buys >= LotSize) ){
+      }else if( ((Current_Day_Stoc != SIGNAL_BUY) || (Day_Stoc != SIGNAL_BUY)) && (_Buys >= LotSize) && Closing == 0 ){
         _Close(OP_BUY,0);   Day_change = 0;
         _Update(OP_BUY,true);
         Closing = 1;         
-      }else if( ((Current_Day_Stoc != SIGNAL_SELL) || (Day_Stoc != SIGNAL_SELL)) && (_Sells >= LotSize) ){
+      }else if( ((Current_Day_Stoc != SIGNAL_SELL) || (Day_Stoc != SIGNAL_SELL)) && (_Sells >= LotSize)  && Closing == 0 ){
         _Close(OP_SELL,0); Day_change = 0;
         _Update(OP_SELL,true); 
         Closing = 1;  
