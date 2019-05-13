@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Stocastic Round 1."
 #property link      "https://www.DasStack.com"
-#property version   "1.5"
+#property version   "1.6"
 #property strict
 
 /********************************************************************
@@ -214,11 +214,12 @@ int Signal;
       
       ;
       Comment(s);
-   if((profit >= TakeProfitDolar && (_SLots > LotSize || _BLots > LotSize))){ //@ Break Even
+   if((profit >= TakeProfitDolar && Closing==1 )){ //@ Break Even
       Print("### Close All ####");
       _Close_all();
+      Closing = 0;
       Total_orders();
-      } 
+    } 
    order_check(); 
    return(0);
    
@@ -261,12 +262,12 @@ int order_check()
   */
    if(BarD){ 
 	   RefreshRates();
-	   StochPrevMain1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,2);
-	   StochPrevSig1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,2);
-	   StochPrevMain=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,1);
-	   StochPrevSig=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,1);
-	   StochCurrMain=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,0);
-	   StochCurrSig=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,0);
+	   StochPrevMain1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,3);
+	   StochPrevSig1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,3);
+	   StochPrevMain=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,2);
+	   StochPrevSig=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,2);
+	   StochCurrMain=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,1);
+	   StochCurrSig=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,1);
 	   //Comment(StochPrevMain," ",StochPrevSig," ",StochCurrMain," ",StochCurrSig);
 	   bool over = (StochCurrMain>UpperThreshold || StochCurrSig>UpperThreshold || StochPrevMain>UpperThreshold || StochPrevSig>UpperThreshold);
 	   bool under = (StochCurrSig<LowerThreShold || StochCurrMain<LowerThreShold || StochPrevMain<LowerThreShold || StochPrevSig<LowerThreShold);
@@ -279,11 +280,19 @@ int order_check()
 	        Day_Stoc=SIGNAL_BUY;
 	        Current_Day_Stoc = SIGNAL_BUY;
 	        //Comment("Buy");
+	     }else if( (StochCurrMain<StochCurrSig) && Day_Stoc == SIGNAL_SELL ){
+	     	Day_Stoc=SIGNAL_NONE;
+	     	Day_change=1;
+	     }else if( (StochCurrMain>StochCurrSig)  && Day_Stoc == SIGNAL_BUY ){
+	     	Day_Stoc=SIGNAL_NONE;
+	     	Day_change=1;
 	     }
 	     if (StochCurrMain<StochCurrSig  && (StochCurrMain>CenterThreShold || StochCurrSig>CenterThreShold)){
 	     	Current_Day_Stoc = SIGNAL_SELL;
+	     	Day_change=1;
 	     }else if (StochCurrMain>StochCurrSig  && (StochCurrSig<CenterThreShold || StochCurrMain<CenterThreShold)){
 	     	Current_Day_Stoc = SIGNAL_BUY;
+	     	Day_change=1;
 	     }else {
 	     	Current_Day_Stoc = SIGNAL_NONE;
 	     }
@@ -304,12 +313,13 @@ int order_check()
 			Hour_Stoc = SIGNAL_NONE;
 		}
 
-		if(StochCurrMainM<StochCurrSigM  &&  (StochCurrMainM>CenterThreShold || StochCurrSigM>CenterThreShold)){
+		if(StochCurrMainM<StochCurrSigM ){
 			Current_Hour_Stoc = SIGNAL_SELL;
-		}else if (StochCurrMainM>StochCurrSigM  && (StochCurrMainM<CenterThreShold || StochCurrSigM<CenterThreShold)) {
+		}else if (StochCurrMainM>StochCurrSigM) {
 			Current_Hour_Stoc = SIGNAL_BUY;
 		}else {
 			Current_Hour_Stoc = SIGNAL_NONE;
+
 		}
 
 
@@ -321,8 +331,36 @@ int order_check()
  
   return (0);
  }
-
+int Day_change=0;int Closing = 0;
  void Ordering (){
+      if((Hour_Stoc == SIGNAL_BUY) && (Day_Stoc == SIGNAL_BUY) &&(Current_Day_Stoc == SIGNAL_BUY) && (_Buy[_sq] < 1)  ){ //Real buy now + ADX Buy
+          Buy_normal (LotSize,TakeProfit);          
+        if(_Sells>0){
+        	_Update(OP_BUY,true);  
+        }       
+      }else if((Hour_Stoc == SIGNAL_SELL) && (Day_Stoc == SIGNAL_SELL) &&(Current_Day_Stoc == SIGNAL_SELL) && (_Sell[_sq] < 1) ){ // REal SEll now + adx Sell
+          Sell_normal (LotSize,TakeProfit); 
+        if(_Buys>0) {
+          _Update(OP_SELL,true);    
+        }
+      }else if( ((Current_Day_Stoc != SIGNAL_BUY) && (Day_Stoc == SIGNAL_BUY)) || Day_change ){ //Real buy now + ADX Buy
+        _Close(OP_BUY,0);    Day_change=0;              
+      }else if( ((Current_Day_Stoc != SIGNAL_SELL) && (Day_Stoc == SIGNAL_SELL)) || Day_change ){ // REal SEll now + BUY
+        _Close(OP_SELL,0);   Day_change=0;    
+        //_Update(OP_SELL,true);  
+      }
+
+      if((Hour_Stoc == SIGNAL_BUY) &&  (_Buys > LotSize) && Day_Stoc == SIGNAL_SELL  ){ //Real buy now + ADX Buy
+          Buy_normal (LotSize,TakeProfit);          
+          _Update(OP_BUY,true);
+          Closing = 1;
+      }else if((Hour_Stoc == SIGNAL_SELL) && (_Sells > LotSize) && Day_Stoc == SIGNAL_BUY ){ // REal SEll now + adx Sell
+          Sell_normal (LotSize,TakeProfit); 
+          _Update(OP_SELL,true);   
+          Closing = 1; 
+      }
+       print(false);
+
  	/*
  	if(Sell_ && (Signal == OP_BUY) && _Buys ){
         // Print("### Close All ####");
@@ -356,20 +394,7 @@ int order_check()
       }
       */
 
-      if((Hour_Stoc == SIGNAL_BUY) && (Day_Stoc == SIGNAL_BUY) &&(Current_Day_Stoc == SIGNAL_BUY) && (_Buy[_sq] < 1)  ){ //Real buy now + ADX Buy
-          Buy_normal (LotSize,TakeProfit);          
-        if(_Sells>0)       
-        	_Update(OP_BUY,false);  
-      }else if((Hour_Stoc == SIGNAL_SELL) && (Day_Stoc == SIGNAL_SELL) &&(Current_Day_Stoc == SIGNAL_SELL) && (_Sell[_sq] < 1) ){ // REal SEll now + adx Sell
-          Sell_normal (LotSize,TakeProfit);     
-        if(_Buys>0)  
-         _Update(OP_SELL,false);    
-      }else if( ((Current_Hour_Stoc != SIGNAL_BUY) || (Current_Day_Stoc != SIGNAL_BUY)) && (Day_Stoc == SIGNAL_BUY)  ){ //Real buy now + ADX Buy
-        _Close(OP_BUY,0);                  
-      }else if( ((Current_Hour_Stoc != SIGNAL_SELL) || (Current_Day_Stoc != SIGNAL_SELL)) && (Day_Stoc == SIGNAL_SELL) ){ // REal SEll now + BUY
-        _Close(OP_SELL,0);       
-        //_Update(OP_SELL,false);  
-      }/*
+      /*
       else if ( Order == SIGNAL_BUY && (Signal == OP_BUY) && (_Buy[_sq] < 1)  ){
           Buy_normal (LotSize,100); 
           if(_Sells>0) 
@@ -382,11 +407,10 @@ int order_check()
 
       //lastBuy = Buy_;
       //lastSell = Sell_;
-  if( (profit <= TakeProfitLoss ) && (Bid > max_q || Bid < min_q)){ //@ Break Even
-    if(_SProfit <= TakeProfitLoss || _BProfit <= TakeProfit)
-      takeEq();
-   }
-       print(false);
+  //if( (profit <= TakeProfitLoss ) && (Bid > max_q || Bid < min_q)){ //@ Break Even
+    //if(_SProfit <= TakeProfitLoss || _BProfit <= TakeProfit)
+      //takeEq();
+  // }
  }
 
 
@@ -712,10 +736,3 @@ if(_SLots < _Buys ){
 }
 
 }
-
-
-
-
-
-
-
