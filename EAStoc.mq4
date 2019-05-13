@@ -3,7 +3,7 @@
 //|                                            Mohamed Mansour Beek. |
 //|                                          https://www.mansour.com |
 //+------------------------------------------------------------------+
-#property copyright "Stocastic Round 1."
+#property copyright "Stocastic EA."
 #property link      "https://www.DasStack.com"
 #property version   "1.6"
 #property strict
@@ -260,7 +260,7 @@ int order_check()
   Day frame : signal > main and touch 80 level
   H4 frame: Signal > main above 50level
   */
-   if(BarD){ 
+   if(BarD){
 	   RefreshRates();
 	   StochPrevMain1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_BASE,3);
 	   StochPrevSig1=iStochastic(Symbol(),PERIOD_D1,5,3,3,MODE_SMA,STO_LOWHIGH,MODE_SIGNAL,3);
@@ -275,17 +275,25 @@ int order_check()
 	     if( (StochPrevMain1>StochPrevSig1 || StochPrevMain>StochPrevSig) && StochCurrMain<StochCurrSig  && over ){
 	        Day_Stoc=SIGNAL_SELL;
 	        Current_Day_Stoc = SIGNAL_SELL;
+	        ObjectCreate("Sell"+(string)Time[0], OBJ_VLINE, 0, Time[0],0);
+	        ObjectSet("Sell"+(string)Time[0], OBJPROP_COLOR, Red);
 	        //Comment("Sell");
 	     }else if( (StochPrevMain<StochPrevSig || StochPrevMain1<StochPrevSig1) && StochCurrMain>StochCurrSig  && under ){
 	        Day_Stoc=SIGNAL_BUY;
 	        Current_Day_Stoc = SIGNAL_BUY;
+	        ObjectCreate("Buy"+(string) Time[0], OBJ_VLINE, 0, Time[0],0);
+	        ObjectSet("Buy"+(string)Time[0], OBJPROP_COLOR, Blue);
 	        //Comment("Buy");
 	     }else if( (StochCurrMain<StochCurrSig) && Day_Stoc == SIGNAL_SELL ){
 	     	Day_Stoc=SIGNAL_NONE;
 	     	Day_change=1;
+	     	ObjectCreate("OUT"+(string) Time[0], OBJ_VLINE, 0, Time[0],0);
+	        ObjectSet("OUT"+(string)Time[0], OBJPROP_COLOR, Orange);
 	     }else if( (StochCurrMain>StochCurrSig)  && Day_Stoc == SIGNAL_BUY ){
 	     	Day_Stoc=SIGNAL_NONE;
 	     	Day_change=1;
+	     	ObjectCreate("OUT"+(string) Time[0], OBJ_VLINE, 0, Time[0],0);
+	        ObjectSet("OUT"+(string)Time[0], OBJPROP_COLOR, Yellow);
 	     }
 	     if (StochCurrMain<StochCurrSig  && (StochCurrMain>CenterThreShold || StochCurrSig>CenterThreShold)){
 	     	Current_Day_Stoc = SIGNAL_SELL;
@@ -344,9 +352,11 @@ int Day_change=0;int Closing = 0;
           _Update(OP_SELL,true);    
         }
       }else if( ((Current_Day_Stoc != SIGNAL_BUY) && (Day_Stoc == SIGNAL_BUY)) || Day_change ){ //Real buy now + ADX Buy
-        _Close(OP_BUY,0);    Day_change=0;              
+        _Close(OP_BUY,0);    Day_change=0;     
+        Closing = 1;         
       }else if( ((Current_Day_Stoc != SIGNAL_SELL) && (Day_Stoc == SIGNAL_SELL)) || Day_change ){ // REal SEll now + BUY
-        _Close(OP_SELL,0);   Day_change=0;    
+        _Close(OP_SELL,0);   Day_change=0;  
+        Closing = 1;  
         //_Update(OP_SELL,true);  
       }
 
@@ -726,7 +736,6 @@ void Total_orders(bool P = true)
 //+------------------------------------------------------------------+
 //| Take Equivlaent  function                                        |
 //+------------------------------------------------------------------+
-
 void takeEq(){
 if(_SLots > _Buys ){
   Buy_double(_SLots-_BLots);
