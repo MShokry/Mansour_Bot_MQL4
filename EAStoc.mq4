@@ -351,20 +351,21 @@ int Day_change=0;int Closing = 0;
         if(_Buys>0) {
           _Update(OP_SELL,true);    
         }
-      }else if( ((Current_Day_Stoc != SIGNAL_BUY) && (Day_Stoc == SIGNAL_BUY)) || Day_change ){ //Real buy now + ADX Buy
-        _Close(OP_BUY,0);    Day_change=0;     
+      }else if( ((Current_Day_Stoc != SIGNAL_BUY) || (Day_Stoc != SIGNAL_BUY)) && (_Buys >= LotSize) ){
+        _Close(OP_BUY,0);   Day_change = 0;
+        _Update(OP_BUY,true);
         Closing = 1;         
-      }else if( ((Current_Day_Stoc != SIGNAL_SELL) && (Day_Stoc == SIGNAL_SELL)) || Day_change ){ // REal SEll now + BUY
-        _Close(OP_SELL,0);   Day_change=0;  
+      }else if( ((Current_Day_Stoc != SIGNAL_SELL) || (Day_Stoc != SIGNAL_SELL)) && (_Sells >= LotSize) ){
+        _Close(OP_SELL,0); Day_change = 0;
+        _Update(OP_SELL,true); 
         Closing = 1;  
-        //_Update(OP_SELL,true);  
       }
 
-      if((Hour_Stoc == SIGNAL_BUY) &&  (_Buys > LotSize) && Day_Stoc == SIGNAL_SELL  ){ //Real buy now + ADX Buy
+      if((Hour_Stoc == SIGNAL_BUY) &&  (_Buys >= LotSize) && ((Current_Day_Stoc != SIGNAL_BUY) || (Day_Stoc != SIGNAL_BUY))  ){ //Real buy now + ADX Buy
           Buy_normal (LotSize,TakeProfit);          
           _Update(OP_BUY,true);
           Closing = 1;
-      }else if((Hour_Stoc == SIGNAL_SELL) && (_Sells > LotSize) && Day_Stoc == SIGNAL_BUY ){ // REal SEll now + adx Sell
+      }else if((Hour_Stoc == SIGNAL_SELL) && (_Sells >= LotSize) && ((Current_Day_Stoc != SIGNAL_SELL) || (Day_Stoc != SIGNAL_SELL)) ){ // REal SEll now + adx Sell
           Sell_normal (LotSize,TakeProfit); 
           _Update(OP_SELL,true);   
           Closing = 1; 
