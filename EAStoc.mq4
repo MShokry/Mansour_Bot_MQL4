@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Stocastic EA."
 #property link      "https://www.DasStack.com"
-#property version   "1.7"
+#property version   "1.8"
 #property strict
 
 /********************************************************************
@@ -214,6 +214,8 @@ int start()
    if((profit >= TakeProfitDolar && Closing==1 )){ //@ Break Even
       Print("### Close All ####");
       _Close_all();
+      Print("### Close All ####");
+      _Close_all();
       Closing = 0;
       Total_orders();
     } 
@@ -340,12 +342,12 @@ int order_check()
 
 int Day_change=0;int Closing = 0;
 void Ordering (){
-      if( (Hour_Stoc == SIGNAL_BUY) && (Day_Stoc == SIGNAL_BUY) && (Current_Day_Stoc == SIGNAL_BUY) && (_Buy[_sq] == 0)  ){ //Real buy now + ADX Buy
+      if( (Hour_Stoc == SIGNAL_BUY) && (Day_Stoc == SIGNAL_BUY) && (Current_Day_Stoc == SIGNAL_BUY) && (_Buy[_sq] == 0) && (_Buy[_sq1] == 0)  ){ //Real buy now + ADX Buy
           Buy_normal (LotSize,TakeProfit);          
         if(_Sells>0){
         	_Update(OP_BUY,true);  
         }       
-      }else if( (Hour_Stoc == SIGNAL_SELL) && (Day_Stoc == SIGNAL_SELL) && (Current_Day_Stoc == SIGNAL_SELL) && (_Sell[_sq] == 0) ){ // REal SEll now + adx Sell
+      }else if( (Hour_Stoc == SIGNAL_SELL) && (Day_Stoc == SIGNAL_SELL) && (Current_Day_Stoc == SIGNAL_SELL) && (_Sell[_sq] == 0) && (_Sell[_sq1] == 0) ){ // REal SEll now + adx Sell
           Sell_normal (LotSize,TakeProfit); 
         if(_Buys>0) {
           _Update(OP_SELL,true);    
@@ -360,11 +362,11 @@ void Ordering (){
         Closing = 1;  
       }
 
-      if( (Hour_Stoc == SIGNAL_BUY) &&  (_Buys >= LotSize) && ((Current_Day_Stoc != SIGNAL_BUY) || (Day_Stoc != SIGNAL_BUY))  && (_Buy[_sq] == 0)){ //Real buy now + ADX Buy
+      if( (Hour_Stoc == SIGNAL_BUY) &&  (_Buys >= LotSize) && ((Current_Day_Stoc != SIGNAL_BUY) || (Day_Stoc != SIGNAL_BUY))  && (_Buy[_sq] == 0)&& (_Buy[_sq1] == 0)){ //Real buy now + ADX Buy
           Buy_normal (LotSize,TakeProfit);          
           _Update(OP_BUY,true);
           Closing = 1;
-      }else if((Hour_Stoc == SIGNAL_SELL) && (_Sells >= LotSize) && ((Current_Day_Stoc != SIGNAL_SELL) || (Day_Stoc != SIGNAL_SELL))  && (_Sell[_sq] == 0) ){ // REal SEll now + adx Sell
+      }else if((Hour_Stoc == SIGNAL_SELL) && (_Sells >= LotSize) && ((Current_Day_Stoc != SIGNAL_SELL) || (Day_Stoc != SIGNAL_SELL))  && (_Sell[_sq] == 0) && (_Sell[_sq1] == 0) ){ // REal SEll now + adx Sell
           Sell_normal (LotSize,TakeProfit); 
           _Update(OP_SELL,true);   
           Closing = 1; 
@@ -612,7 +614,7 @@ void createSq(){
 //| Totals function                                                  |
 //+------------------------------------------------------------------+
 
-int _CountOrd,_sq;
+int _CountOrd,_sq,_sq1;
 int _Buys, _Sells, _Buy[30], _Sell[30];
 double _SLots, _BLots, _SLot[30], _BLot[30];
 double _SProfit, _BProfit;
@@ -636,6 +638,9 @@ void Total_orders(bool P = true)
     for (int ii = 0;ii<29;ii++){
       if((Bid > LL[ii]) && Bid < LL[ii+1]){
           _sq = ii;
+      }
+      if((Ask > LL[ii]) && Ask < LL[ii+1]){
+          _sq1 = ii;
       }
     }
    for(int i=0;i<OrdersTotal();i++)
