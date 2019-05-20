@@ -26,7 +26,6 @@ void print(bool trade = false){
       " SL "+ (string) _Sell[_sq]+                          " BY "+ (string) _Buy[_sq] + "\n" +
       " Ttl "+ (string) profit  +
       "\nH4 " + (string) Current_Hour_Stoc + "H4- " + (string) Hour_Stoc  + " D " + (string) Current_Day_Stoc + " D- " + (string) Day_Stoc
-      
       ;
       Comment(s);
       ObjectCreate("S1", OBJ_TEXT, 0, 0, 0, 0);
@@ -42,7 +41,7 @@ void print(bool trade = false){
       " SL "+ (string) _Sell[_sq]+                          " BY "+ (string) _Buy[_sq] + "\n" +
       " SLt ", _SLots,                          " BLt ",_BLots,
       " Pft ", _SProfit,                        " pft ",_BProfit, 
-      " Ttl ", profit +
+      " Ttl ", (string) profit +
       "\nH4 " + (string) Current_Hour_Stoc + "H4- " + (string) Hour_Stoc  + " D " + (string) Current_Day_Stoc + " D- " + (string) Day_Stoc
       
       );     
@@ -237,7 +236,7 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
          if(OrderSymbol()==Symbol()){
           if(OrderStopLoss() > 0.0){ continue;} 
             if(OrderType()== direction &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) ){
-                 res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
+                 res = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),10,clrBrown);//price
                  c = " Order #"+(string) OrderTicket()+" By Double rev profit: "+(string)  OrderTakeProfit() +" Dir "+(string)  direction + " Lots " +(string)  OrderLots();
                  if(!res){
                      Print("Error in Closing _Close ALL . Error code=", ErrorDescription(GetLastError()) , comment ,c);
@@ -262,14 +261,14 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
             if (diff == 0.0) continue;
             if((OrderSymbol()==Symbol()) && (OrderType()==direction) &&(OrderMagicNumber()==MagicNumber) && (OrderProfit() > 0.0) ){
                if(diff >= OrderLots()){
-                  res = OrderClose(OrderTicket(),OrderLots(),price,3,clrBrown);
+                  res = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),3,clrBrown);
                   c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
                   if(res){
                      diff -=  OrderLots();
                      prof += OrderProfit();
                      }
                }else{
-                  res = OrderClose(OrderTicket(),diff,price,3,clrBrown);
+                  res = OrderClose(OrderTicket(),diff,OrderClosePrice(),3,clrBrown);
                   c = "Order #"+(string) OrderTicket()+" profit: "+(string)  OrderTakeProfit();
                   if(res){
                      diff = 0;
@@ -306,14 +305,14 @@ void _Close_all()
       {
       bool res = true;
       if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES) == false){ 
-        Print("Order Not Selected", i," Error", ErrorDescription(GetLastError()));
+        Print("Order Not Selected _Close_all ", i," Error", ErrorDescription(GetLastError()));
         continue;
       }
       if(OrderSymbol()==Symbol() &&(OrderMagicNumber()==MagicNumber)){   
               RefreshRates();
-               if (OrderType()>OP_SELL)   res = OrderDelete(OrderTicket());
-               if (OrderType()==OP_SELL)  res = OrderClose(OrderTicket(),OrderLots(),Ask,10,CLR_NONE); 
-               if (OrderType()==OP_BUY)   res = OrderClose(OrderTicket(),OrderLots(),Bid,10,CLR_NONE); //MarketInfo(OrderSymbol(),MODE_ASK)
+               if (OrderType()>OP_SELL)   res = OrderDelete(OrderTicket());//ask
+               if (OrderType()==OP_SELL)  res = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),35,CLR_NONE); 
+               if (OrderType()==OP_BUY)   res = OrderClose(OrderTicket(),OrderLots(),OrderClosePrice(),35,CLR_NONE); //MarketInfo(OrderSymbol(),MODE_ASK) //bid
             if(!res)
                Print("Error in OrderCloase _Close_all. Error code=",ErrorDescription(GetLastError()),OrderType());
             else
