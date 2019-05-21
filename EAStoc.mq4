@@ -189,7 +189,7 @@ int Signal;
 int start()
   {
    BarD = IsBarClosed(iMainFrame,2);
-   BarH = IsBarClosed(PERIOD_M30,1) ;
+   BarH = IsBarClosed(iHiFrame,1) ;
    // BarM = IsBarClosed(iLoFrame,0);
 
    comment = "";
