@@ -9,16 +9,16 @@ This repo is a try to build a tading bot for forex market using MQL4
 ## Tools
 
 #### Actions  
-Buy|Sell
-Buy|Sell Equal
-Buy|Sell Double
-CloseAll; Profit
-Close Buy|Sell Profit
-Close Now
+- Buy|Sell
+- Buy|Sell Equal
+- Buy|Sell Double
+- CloseAll; Profit
+- Close Buy|Sell Profit
+- Close Now
 
-### Inpust ###
-Orders Details => total Buy Sell Profit  ,.....
-Current Square
-Top Sq Buy|Sell => determine 3 states Inside|OverBuy|UnderSell => % 
+### Input
+- Orders Details => total Buy Sell Profit  ,.....
+- Current Square
+- Top Sq Buy|Sell => determine 3 states Inside|OverBuy|UnderSell => % 
 
 ## Known issues
