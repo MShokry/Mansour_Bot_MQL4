@@ -198,8 +198,8 @@ void Sell_normal(double _LotSize = 0.0,double TP = 0.0)
    double SortTakeProfit = 0.0;
    RefreshRates();
    if(StopLoss > 0) SortStopLoss = NormalizeDouble(Ask + StopLoss * RealPoint, Digits);
-   if(TP > 0) SortTakeProfit = NormalizeDouble(Ask - TP * RealPoint, Digits);
-   string OrederPlace = ";;SL " + (string) SortStopLoss + " TP " + (string) SortTakeProfit + " At " + (string) Ask + " Lot " + (string) _LotSize;
+   if(TP > 0) SortTakeProfit = NormalizeDouble(Bid - TP * RealPoint, Digits);
+   string OrederPlace = ";;SL " + (string) SortStopLoss + " TP " + (string) SortTakeProfit + " At " + (string) Bid + " Lot " + (string) _LotSize;
    comment = " " + Reason + " " + Action + " " + OrederPlace;
    if (OrderSend( Symbol(), OP_SELL, _LotSize, Bid, 3, SortStopLoss, SortTakeProfit, "Sell Order"+comment, MagicNumber,0, clrRed) == -1)
       {
